@@ -97,11 +97,11 @@ func drawImage(d sc.Delaunay) {
         //dc.DrawStringAnchored(s, v.Pos.X-10, imageSizeY-v.Pos.Y-10, 0.5, 0.5)
     }
 
-    dc.SetRGB(1, 1, 0)
-    dc.DrawCircle(432, imageSizeY-894, 5)
+    //dc.SetRGB(1, 1, 0)
+    //dc.DrawCircle(432, imageSizeY-894, 5)
     //dc.DrawCircle(599, imageSizeY-532, 5)
     //dc.DrawCircle(501, imageSizeY-578, 5)
-    dc.Fill()
+    //dc.Fill()
 
     dc.SavePNG("out.png")
 }
@@ -193,7 +193,7 @@ func testCircle() sc.Delaunay {
     fmt.Printf("===========================\n")
     fmt.Printf("=== test_unknown_problem_random\n")
     fmt.Printf("===========================\n")
-    count := 10
+    count := 200
     var pointList v.PointList
 
     center := v.Vector{500, 500, 0}
@@ -205,7 +205,7 @@ func testCircle() sc.Delaunay {
         pointList = append(pointList, v)
     }
 
-    //pointList = append(pointList, v.Vector{500, 500, 0})
+    pointList = append(pointList, v.Vector{500, 500, 0})
 
     start := time.Now()
     delaunay := sc.Triangulate(pointList)
@@ -227,7 +227,7 @@ func testWave() sc.Delaunay {
 
             newI := v.DegToRad(float64(i)/float64(count)*360.)
 
-            v := v.Vector{float64(i)/float64(count)*900+50, math.Sin(newI)*200.+500, 0}
+            v := v.Vector{float64(i)/float64(count)*900+50, math.Sin(newI)*450.+500, 0}
             //fmt.Println(v)
             pointList = append(pointList, v)
     }
@@ -241,44 +241,18 @@ func testWave() sc.Delaunay {
     return delaunay
 }
 
-func testGrid() sc.Delaunay {
+func testTiltedGrid(tiltAngle float64) sc.Delaunay {
     fmt.Printf("===========================\n")
     fmt.Printf("=== test_grid\n")
     fmt.Printf("===========================\n")
     count := 50
+    angle := v.DegToRad(tiltAngle)
 
     var pointList v.PointList
 
-    for x := 0; x < count; x++ {
+    for x := 0; x <= count; x++ {
         newX := float64(x)/float64(count) * 900. + 50.
-        for y := 0; y < count; y++ {
-            newY := float64(y)/float64(count) * 900. + 50.
-            v := v.Vector{newX, newY, 0}
-            pointList = append(pointList, v)
-        }
-    }
-
-    start := time.Now()
-    delaunay := sc.Triangulate(pointList)
-    binTime := time.Since(start).Nanoseconds()
-
-    fmt.Printf("Triangulation in Milliseconds: %.8f\n", float64(binTime)/1000000.0)
-
-    return delaunay
-}
-
-func testTiltedGrid() sc.Delaunay {
-    fmt.Printf("===========================\n")
-    fmt.Printf("=== test_grid\n")
-    fmt.Printf("===========================\n")
-    count := 50
-    angle := v.DegToRad(89.0)
-
-    var pointList v.PointList
-
-    for x := 0; x < count; x++ {
-        newX := float64(x)/float64(count) * 900. + 50.
-        for y := 0; y < count; y++ {
+        for y := 0; y <= count; y++ {
             newY := float64(y)/float64(count) * 900. + 50.
             tiltedX := (newX-500.) * math.Cos(angle) - (newY-500.) * math.Sin(angle)
             tiltedY := (newY-500.) * math.Cos(angle) + (newX-500.) * math.Sin(angle)
@@ -305,7 +279,9 @@ func main() {
     var d sc.Delaunay
     //d = testUnknownProblem03()
     //d = testUnknownProblemRandom()
-    //d = testTiltedGrid()
+    //d = testTiltedGrid(0.0)
+    //d = testTiltedGrid(89.0)
+    //d = testTiltedGrid(45.0)
     //d = testCircle()
     d = testWave()
     d = d
