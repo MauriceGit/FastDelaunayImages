@@ -167,11 +167,11 @@ func testUnknownProblemRandom() sc.Delaunay {
     fmt.Printf("===========================\n")
     fmt.Printf("=== test_unknown_problem_random\n")
     fmt.Printf("===========================\n")
-    count := 100
+    count := 100000
     var seed int64 = time.Now().UTC().UnixNano()
     seed = seed
     fmt.Fprintf(os.Stderr, "Seed: %v\n", 1528627210314976626)
-    r := rand.New(rand.NewSource(1528627210314976626))
+    r := rand.New(rand.NewSource(seed))
     var pointList v.PointList
 
     for i:= 0; i < count; i++ {
@@ -278,12 +278,12 @@ func main() {
 
     var d sc.Delaunay
     //d = testUnknownProblem03()
-    //d = testUnknownProblemRandom()
+    d = testUnknownProblemRandom()
     //d = testTiltedGrid(0.0)
     //d = testTiltedGrid(89.0)
     //d = testTiltedGrid(45.0)
     //d = testCircle()
-    d = testWave()
+    //d = testWave()
     d = d
 
     // Wrong timing.
@@ -360,5 +360,5 @@ func main() {
     //fmt.Println(d)
     //d.Verify()
 
-    drawImage(d)
+    //drawImage(d)
 }
