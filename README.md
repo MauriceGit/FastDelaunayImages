@@ -1,5 +1,5 @@
 
-# A fast and relatively (needs more tests) Delaunay implementation
+# A fast and relatively robust (needs more tests) Delaunay implementation
 
 Circle with 10 points:
 ![circle](https://github.com/MauriceGit/FastDelaunayImages/blob/master/Screenshots/circle_10.png "circle with 10 points")
