@@ -8,5 +8,7 @@
 	  Implement special case, where a vertex is directly hit (this is always the case when we have the exact 
 	  same polar angle! Create two triangles now instead of one and there should never be two nodes with
 	  the exact same polar angle in the frontier list anyway!!!
-- Reproduce the error:
-  testWave() with 15 points, newI *5.0 before DegToRad
+	- Reproduce the error:
+	  testWave() with 15 points, newI *5.0 before DegToRad
+- testWave() with lots of points is phenomenally slow! It spends up to 99% of overall runtime in legalizeTriangle()
+  There needs to be some kind of fix or corner case so we don't reevaluate all the triangles again and again!
