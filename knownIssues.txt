@@ -1,0 +1,12 @@
+- New nodes inserted in the tree with the exact same key (in this case polar angle), are possibly inserted after
+  the already existing ones. In this case, they are in the wrong order. ConsecutiveRight and Left are now not
+  working any more, as they compare the wrong edges!!! (frontier is not in the correct order any more!)
+	- Possible fix (not good):
+	  Implement a different data structure such as Skip Lists. With extra care on where elements are inserted,
+          this might solve the issue.
+	- Better fix:
+	  Implement special case, where a vertex is directly hit (this is always the case when we have the exact 
+	  same polar angle! Create two triangles now instead of one and there should never be two nodes with
+	  the exact same polar angle in the frontier list anyway!!!
+- Reproduce the error:
+  testWave() with 15 points, newI *5.0 before DegToRad

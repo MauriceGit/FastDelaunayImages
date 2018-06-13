@@ -65,7 +65,7 @@ func drawImage(d sc.Delaunay) {
         dc.Stroke()
 
         dc.SetRGB(0, 0, 1)
-        //dc.DrawString(fmt.Sprintf("(%.1f, %.1f)", v1.X, v1.Y), v1.X, imageSizeY-v1.Y)
+        dc.DrawString(fmt.Sprintf("(%.1f, %.1f)", v1.X, v1.Y), v1.X, imageSizeY-v1.Y)
 
         dc.SetRGB(0, 0.5, 0)
         middleP := v.Vector{(v1.X+v2.X)/2., (v1.Y+v2.Y)/2., 0}
@@ -77,8 +77,8 @@ func drawImage(d sc.Delaunay) {
         middleP.Add(crossP)
 
         i = i
-        //s := fmt.Sprintf("(%d)", i)
-        //dc.DrawStringAnchored(s, middleP.X, imageSizeY-middleP.Y, 0.5, 0.5)
+        s := fmt.Sprintf("(%d)", i)
+        dc.DrawStringAnchored(s, middleP.X, imageSizeY-middleP.Y, 0.5, 0.5)
     }
 
     dc.SetLineWidth(1.0)
@@ -93,8 +93,8 @@ func drawImage(d sc.Delaunay) {
         dc.Fill()
 
         i = i
-        //s := fmt.Sprintf("(%d)", i)
-        //dc.DrawStringAnchored(s, v.Pos.X-10, imageSizeY-v.Pos.Y-10, 0.5, 0.5)
+        s := fmt.Sprintf("(%d)", i)
+        dc.DrawStringAnchored(s, v.Pos.X-10, imageSizeY-v.Pos.Y-10, 0.5, 0.5)
     }
 
     //dc.SetRGB(1, 1, 0)
@@ -167,11 +167,11 @@ func testUnknownProblemRandom() sc.Delaunay {
     fmt.Printf("===========================\n")
     fmt.Printf("=== test_unknown_problem_random\n")
     fmt.Printf("===========================\n")
-    count := 100000
+    count := 1000000
     var seed int64 = time.Now().UTC().UnixNano()
     seed = seed
     fmt.Fprintf(os.Stderr, "Seed: %v\n", 1528627210314976626)
-    r := rand.New(rand.NewSource(seed))
+    r := rand.New(rand.NewSource(1528627210314976626))
     var pointList v.PointList
 
     for i:= 0; i < count; i++ {
@@ -220,12 +220,12 @@ func testWave() sc.Delaunay {
     fmt.Printf("===========================\n")
     fmt.Printf("=== test_unknown_problem_random\n")
     fmt.Printf("===========================\n")
-    count := 100
+    count := 15
     var pointList v.PointList
 
     for i := 0; i <= count; i++ {
 
-            newI := v.DegToRad(float64(i)/float64(count)*360.)
+            newI := v.DegToRad(float64(i)/float64(count)*360.*5.0)
 
             v := v.Vector{float64(i)/float64(count)*900+50, math.Sin(newI)*450.+500, 0}
             //fmt.Println(v)
@@ -278,12 +278,12 @@ func main() {
 
     var d sc.Delaunay
     //d = testUnknownProblem03()
-    d = testUnknownProblemRandom()
+    //d = testUnknownProblemRandom()
     //d = testTiltedGrid(0.0)
     //d = testTiltedGrid(89.0)
     //d = testTiltedGrid(45.0)
     //d = testCircle()
-    //d = testWave()
+    d = testWave()
     d = d
 
     // Wrong timing.
@@ -360,5 +360,5 @@ func main() {
     //fmt.Println(d)
     //d.Verify()
 
-    //drawImage(d)
+    drawImage(d)
 }
