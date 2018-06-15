@@ -65,7 +65,7 @@ func drawImage(d sc.Delaunay) {
         dc.Stroke()
 
         dc.SetRGB(0, 0, 1)
-        dc.DrawString(fmt.Sprintf("(%.1f, %.1f)", v1.X, v1.Y), v1.X, imageSizeY-v1.Y)
+        //dc.DrawString(fmt.Sprintf("(%.1f, %.1f)", v1.X, v1.Y), v1.X, imageSizeY-v1.Y)
 
         dc.SetRGB(0, 0.5, 0)
         middleP := v.Vector{(v1.X+v2.X)/2., (v1.Y+v2.Y)/2., 0}
@@ -77,8 +77,8 @@ func drawImage(d sc.Delaunay) {
         middleP.Add(crossP)
 
         i = i
-        s := fmt.Sprintf("(%d)", i)
-        dc.DrawStringAnchored(s, middleP.X, imageSizeY-middleP.Y, 0.5, 0.5)
+        //s := fmt.Sprintf("(%d)", i)
+        //dc.DrawStringAnchored(s, middleP.X, imageSizeY-middleP.Y, 0.5, 0.5)
     }
 
     dc.SetLineWidth(1.0)
@@ -93,8 +93,8 @@ func drawImage(d sc.Delaunay) {
         dc.Fill()
 
         i = i
-        s := fmt.Sprintf("(%d)", i)
-        dc.DrawStringAnchored(s, v.Pos.X-10, imageSizeY-v.Pos.Y-10, 0.5, 0.5)
+        //s := fmt.Sprintf("(%d)", i)
+        //dc.DrawStringAnchored(s, v.Pos.X-10, imageSizeY-v.Pos.Y-10, 0.5, 0.5)
     }
 
     //dc.SetRGB(1, 1, 0)
@@ -216,7 +216,9 @@ func testCircle() sc.Delaunay {
     return delaunay
 }
 
-func testWave() sc.Delaunay {
+
+
+func testWaveCenterMirrored() sc.Delaunay {
     fmt.Printf("===========================\n")
     fmt.Printf("=== test_unknown_problem_random\n")
     fmt.Printf("===========================\n")
@@ -226,6 +228,31 @@ func testWave() sc.Delaunay {
     for i := 0; i <= count; i++ {
 
             newI := v.DegToRad(float64(i)/float64(count)*360.*5.0)
+
+            v := v.Vector{float64(i)/float64(count)*900+50, math.Sin(newI)*450.+500, 0}
+            //fmt.Println(v)
+            pointList = append(pointList, v)
+    }
+
+    start := time.Now()
+    delaunay := sc.Triangulate(pointList)
+    binTime := time.Since(start).Nanoseconds()
+
+    fmt.Printf("Triangulation in Milliseconds: %.8f\n", float64(binTime)/1000000.0)
+
+    return delaunay
+}
+
+func testWave() sc.Delaunay {
+    fmt.Printf("===========================\n")
+    fmt.Printf("=== test_unknown_problem_random\n")
+    fmt.Printf("===========================\n")
+    count := 150
+    var pointList v.PointList
+
+    for i := 0; i <= count; i++ {
+
+            newI := v.DegToRad(float64(i)/float64(count)*360.)
 
             v := v.Vector{float64(i)/float64(count)*900+50, math.Sin(newI)*450.+500, 0}
             //fmt.Println(v)
