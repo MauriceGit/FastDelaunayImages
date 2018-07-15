@@ -305,21 +305,15 @@ func main() {
 
     var d sc.Delaunay
     //d = testUnknownProblem03()
-    //d = testUnknownProblemRandom()
+    d = testUnknownProblemRandom()
     //d = testTiltedGrid(0.0)
     //d = testTiltedGrid(89.0)
     //d = testTiltedGrid(45.0)
     //d = testCircle()
-    d = testWave()
+    //d = testWave()
     d = d
 
-    // Wrong timing.
-    // 10       points  0.12
-    // 100      points  0.19
-    // 1000     points  0.38
-    // 10000    points  1.8
-    // 100000   points  14
-    // 1000000  points  147
+    ///=========== Frontier: Slice ==================================///
 
     // Correct timing and Interpolation Search. Seconds.
     // 10       points  0.00005763
@@ -339,12 +333,7 @@ func main() {
     // 2000000  points  11.72728091
     // 5000000  points  33.50491853
 
-    // ===========================
-    // === test_unknown_problem_random
-    // ===========================
-    // count: 2000000
-    // Seed:  1527368018753283347
-    // Triangulation in Milliseconds: 27.15096612
+    ///=========== Frontier: 2,3-Tree ===============================///
 
     // Changed Frontier structure to first 2,3-tree implementation
     // ===========================
@@ -363,7 +352,7 @@ func main() {
     // Triangulation in Milliseconds: 11.60121581
 
     // Optimized 2,3-tree with node recycling and memory management.
-    // 10       points  0.00008067
+    // 10       points  0.08035200
     // 100      points  0.00056354
     // 1000     points  0.00479936
     // 10000    points  0.05738459
@@ -372,14 +361,38 @@ func main() {
     // 2000000  points  16.2359380
 
     // Some finetuning.
-    // 10       points  0.00006059
-    // 100      points  0.00047796
-    // 1000     points  0.00444188
-    // 10000    points  0.05479064
-    // 100000   points  0.61441104
-    // 1000000  points  6.89181266
-    // 2000000  points  14.23493647
-    // 5000000  points  41.91952035
+    // 10       points  0.00008035
+    // 100      points  0.00047035
+    // 1000     points  0.00444172
+    // 10000    points  0.05291956
+    // 100000   points  0.57214100
+    // 1000000  points  6.40743041
+    // 2000000  points  13.4764279
+    // 5000000  points  36.0792809
+
+    ///=========== Frontier: External SkipList ======================///
+
+    // With extern SkipList and lots of .Seek()
+    // 10       points  0.00010022
+    // 100      points  0.00092334
+    // 1000     points  0.01044300
+    // 10000    points  0.09309602
+    // 100000   points  0.99515928
+    // 1000000  points  11.8651977
+    // 2000000  points  25.0317357
+    // 5000000  points  64.6695457
+
+    ///=========== Frontier: My own SkipList ======================///
+
+    // With extern SkipList and lots of .Seek()
+    // 10       points  0.00008780400
+    // 100      points  0.00039038600
+    // 1000     points  0.00341958600
+    // 10000    points  0.03582979400
+    // 100000   points  0.39232895800
+    // 1000000  points  4.24569866200
+    // 2000000  points  9.37676779900
+    // 5000000  points  24.34036847200
 
 
 
@@ -387,5 +400,5 @@ func main() {
     //fmt.Println(d)
     //d.Verify()
 
-    drawImage(d)
+    //drawImage(d)
 }
