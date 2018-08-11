@@ -9,16 +9,146 @@ import (
     "math/rand"
     "time"
     "github.com/fogleman/gg"
-    "strconv"
+    //"strconv"
     //"runtime/pprof"
     //"flag"
     //"log"
     //"runtime"
     "github.com/pkg/profile"
+    "image/png"
+    "image"
+    //"image/draw"
 )
+
+func calcEdgeColorFromVertices(img image.Image, bounds image.Rectangle, v1, v2 v.Vector) (float64, float64, float64) {
+    xRange := float64(bounds.Max.X-bounds.Min.X)
+    yRange := float64(bounds.Max.Y-bounds.Min.Y)
+    r1, g1, b1, _ := img.At(int(v1.X/1000.0*xRange), int(v1.Y/1000.0*yRange)).RGBA()
+    r2, g2, b2, _ := img.At(int(v2.X/1000.0*xRange), int(v2.Y/1000.0*yRange)).RGBA()
+
+    return float64(((r1+r2)/2)>>8)/255., float64(((g1+g2)/2)>>8)/255., float64(((b1+b2)/2.0)>>8)/255.
+}
+
+func calcFaceColor(img image.Image, bounds image.Rectangle, v1, v2, v3 v.Vector) (float64, float64, float64) {
+    xRange := float64(bounds.Max.X-bounds.Min.X)
+    yRange := float64(bounds.Max.Y-bounds.Min.Y)
+
+    r1, g1, b1, _ := img.At(int(v1.X/1000.0*xRange), int(v1.Y/1000.0*yRange)).RGBA()
+    r2, g2, b2, _ := img.At(int(v2.X/1000.0*xRange), int(v2.Y/1000.0*yRange)).RGBA()
+    r3, g3, b3, _ := img.At(int(v3.X/1000.0*xRange), int(v3.Y/1000.0*yRange)).RGBA()
+    center := v.Div(v.Add(v.Add(v1,v2), v3), 3)
+    rc, gc, bc, _ := img.At(int(center.X/1000.0*xRange), int(center.Y/1000.0*yRange)).RGBA()
+
+    r := float64(((r1+r2+r3+rc)/4) >> 8) / 255.
+    g := float64(((g1+g2+g3+gc)/4) >> 8) / 255.
+    b := float64(((b1+b2+b3+bc)/4) >> 8) / 255.
+
+    return r,g,b
+}
+
+func triangulateImage(d sc.Delaunay, drawVertices, drawEdges, drawFaces bool) {
+    file, err := os.Open("./deadpool.png")
+    if err != nil {
+        fmt.Println(err)
+    }
+    defer file.Close()
+
+    img, err := png.Decode(file)
+    if err != nil {
+        fmt.Printf("%s: %v\n", "./kaktusfeige.png\n", err)
+    }
+
+    b := img.Bounds()
+    //rgba := image.NewRGBA(b)
+    //draw.Draw(rgba, b, img, b.Min, draw.Src)
+
+    var imageSizeX float64 = 1000
+    var imageSizeY float64 = 1000
+    dc := gg.NewContext(int(imageSizeX), int(imageSizeY))
+
+    // Background filling in white
+    dc.SetRGB(1,1,1)
+    dc.Clear()
+
+    dc.SetRGB(1, 0, 0)
+
+    for _, f := range d.Faces {
+
+        v1 := d.Vertices[d.Edges[f.EEdge].VOrigin].Pos
+        v2 := d.Vertices[d.Edges[d.Edges[f.EEdge].ENext].VOrigin].Pos
+        v3 := d.Vertices[d.Edges[d.Edges[d.Edges[f.EEdge].ENext].ENext].VOrigin].Pos
+
+        if drawFaces {
+            dc.SetLineWidth(1.0)
+            dc.SetRGB(calcFaceColor(img, b, v1, v2, v3))
+
+            dc.MoveTo(v1.X, v1.Y)
+            dc.LineTo(v2.X, v2.Y)
+            dc.LineTo(v3.X, v3.Y)
+            dc.LineTo(v1.X, v1.Y)
+            dc.ClosePath()
+            dc.Fill()
+
+            dc.SetRGB(0.9902,0.9902,0.9902)
+
+            dc.DrawLine(v1.X, v1.Y, v2.X, v2.Y)
+            dc.Stroke()
+
+            dc.DrawLine(v2.X, v2.Y, v3.X, v3.Y)
+            dc.Stroke()
+
+            dc.DrawLine(v3.X, v3.Y, v1.X, v1.Y)
+            dc.Stroke()
+            dc.Fill()
+
+        }
+
+        if drawEdges {
+            dc.SetLineWidth(2.0)
+            dc.SetRGB(calcEdgeColorFromVertices(img, b, v1, v2))
+            dc.DrawLine(v1.X, v1.Y, v2.X, v2.Y)
+            dc.Stroke()
+
+            dc.SetRGB(calcEdgeColorFromVertices(img, b, v2, v3))
+            dc.DrawLine(v2.X, v2.Y, v3.X, v3.Y)
+            dc.Stroke()
+
+            dc.SetRGB(calcEdgeColorFromVertices(img, b, v3, v1))
+            dc.DrawLine(v3.X, v3.Y, v1.X, v1.Y)
+            dc.Stroke()
+            dc.Fill()
+        }
+    }
+
+
+    if drawVertices {
+        for _,v := range d.Vertices {
+
+            if v == sc.EmptyV {
+                continue
+            }
+
+            xRange := float64(b.Max.X-b.Min.X)
+            yRange := float64(b.Max.Y-b.Min.Y)
+
+            xRelPos := v.Pos.X/1000.0
+            yRelPos := v.Pos.Y/1000.0
+
+            r, g, b, _ := img.At(int(xRelPos*xRange), int(yRelPos*yRange)).RGBA()
+            dc.SetRGB(float64(r>>8)/255., float64(g>>8)/255., float64(b>>8)/255.)
+
+            dc.DrawCircle(v.Pos.X, v.Pos.Y, 2)
+            dc.Fill()
+        }
+    }
+
+    dc.SavePNG("triangulatedImage.png")
+
+}
 
 
 func drawImage(d sc.Delaunay) {
+    var scale float64 = 1.0
     var imageSizeX float64 = 1000
     var imageSizeY float64 = 1000
     dc := gg.NewContext(int(imageSizeX), int(imageSizeY))
@@ -32,8 +162,8 @@ func drawImage(d sc.Delaunay) {
 
     for i := 1; i < 10; i++{
 
-        x := float64(i)*100
-        y := imageSizeY - float64(i)*100
+        x := float64(i)*100*scale
+        y := imageSizeY - float64(i)*100*scale
 
         dc.SetRGB(1, 0.5, 0.5)
         dc.DrawLine(0, y, imageSizeX, y)
@@ -43,9 +173,9 @@ func drawImage(d sc.Delaunay) {
 
         dc.SetRGB(1, 0.0, 0.0)
         // X axis
-        dc.DrawString(strconv.Itoa(int(x)), x+10, imageSizeY-10)
-        // Y axis
-        dc.DrawString(strconv.Itoa(int(imageSizeY-y)), 10, y-10)
+        //dc.DrawString(strconv.Itoa(int(x)), x+10, imageSizeY-10)
+        //// Y axis
+        //dc.DrawString(strconv.Itoa(int(imageSizeY-y)), 10, y-10)
 
     }
 
@@ -61,21 +191,21 @@ func drawImage(d sc.Delaunay) {
         v1 := d.Vertices[e.VOrigin].Pos
         v2 := d.Vertices[d.Edges[e.ETwin].VOrigin].Pos
 
-        dc.DrawLine(v1.X, imageSizeY-v1.Y, v2.X, imageSizeY-v2.Y)
+        dc.DrawLine(v1.X*scale, imageSizeY-v1.Y*scale, v2.X*scale, imageSizeY-v2.Y*scale)
         dc.Stroke()
 
-        dc.SetRGB(0, 0, 1)
+        //dc.SetRGB(0, 0, 1)
         //dc.DrawString(fmt.Sprintf("(%.1f, %.1f)", v1.X, v1.Y), v1.X, imageSizeY-v1.Y)
-
-        dc.SetRGB(0, 0.5, 0)
-        middleP := v.Vector{(v1.X+v2.X)/2., (v1.Y+v2.Y)/2., 0}
-        ortho   := v.Vector{0,0,1}
-        crossP  := v.Cross(v.Sub(v1, v2), ortho)
-        crossP.Div(v.Length(crossP))
-        crossP.Mult(15.)
-
-        middleP.Add(crossP)
-
+        //
+        //dc.SetRGB(0, 0.5, 0)
+        //middleP := v.Vector{(v1.X+v2.X)/2., (v1.Y+v2.Y)/2., 0}
+        //ortho   := v.Vector{0,0,1}
+        //crossP  := v.Cross(v.Sub(v1, v2), ortho)
+        //crossP.Div(v.Length(crossP))
+        //crossP.Mult(15.)
+        //
+        //middleP.Add(crossP)
+        //
         i = i
         //s := fmt.Sprintf("(%d)", i)
         //dc.DrawStringAnchored(s, middleP.X, imageSizeY-middleP.Y, 0.5, 0.5)
@@ -89,7 +219,7 @@ func drawImage(d sc.Delaunay) {
             continue
         }
 
-        dc.DrawCircle(v.Pos.X, imageSizeY-v.Pos.Y, 3)
+        dc.DrawCircle(v.Pos.X*scale, imageSizeY-v.Pos.Y*scale, 2)
         dc.Fill()
 
         i = i
@@ -163,19 +293,19 @@ func testUnknownProblem03() sc.Delaunay {
     return delaunay
 }
 
-func testUnknownProblemRandom() sc.Delaunay {
+func testUnknownProblemRandom(count int, scale, margin float64) sc.Delaunay {
     fmt.Printf("===========================\n")
     fmt.Printf("=== test_unknown_problem_random\n")
     fmt.Printf("===========================\n")
-    count := 1000000
+    //count := 5
     var seed int64 = time.Now().UTC().UnixNano()
     seed = seed
-    fmt.Fprintf(os.Stderr, "Seed: %v\n", 1528627210314976626)
-    r := rand.New(rand.NewSource(1528627210314976626))
+    fmt.Fprintf(os.Stderr, "Seed: %v\n", seed)
+    r := rand.New(rand.NewSource(1533982892382782961))
     var pointList v.PointList
 
     for i:= 0; i < count; i++ {
-        v := v.Vector{r.Float64()*900+50, r.Float64()*900+50, 0}
+        v := v.Vector{r.Float64()*(scale-2*margin)+margin, r.Float64()*(scale-2*margin)+margin, 0}
         pointList = append(pointList, v)
     }
 
@@ -193,7 +323,7 @@ func testCircle() sc.Delaunay {
     fmt.Printf("===========================\n")
     fmt.Printf("=== test_unknown_problem_random\n")
     fmt.Printf("===========================\n")
-    count := 200
+    count := 1000
     var pointList v.PointList
 
     center := v.Vector{500, 500, 0}
@@ -305,12 +435,12 @@ func main() {
 
     var d sc.Delaunay
     //d = testUnknownProblem03()
-    d = testUnknownProblemRandom()
+    //d = testUnknownProblemRandom(13000, 1000, 10)
     //d = testTiltedGrid(0.0)
     //d = testTiltedGrid(89.0)
     //d = testTiltedGrid(45.0)
     //d = testCircle()
-    //d = testWave()
+    d = testWave()
     d = d
 
     ///=========== Frontier: Slice ==================================///
@@ -384,7 +514,6 @@ func main() {
 
     ///=========== Frontier: My own SkipList ======================///
 
-    // With extern SkipList and lots of .Seek()
     // 10       points  0.00008780400
     // 100      points  0.00039038600
     // 1000     points  0.00341958600
@@ -392,13 +521,15 @@ func main() {
     // 100000   points  0.39232895800
     // 1000000  points  4.24569866200
     // 2000000  points  9.37676779900
-    // 5000000  points  24.34036847200
+    // 5000000  points  24.3403684720
 
 
 
 
     //fmt.Println(d)
-    //d.Verify()
+    fmt.Println(d.Verify())
+    //fmt.Println(d)
 
-    //drawImage(d)
+    //triangulateImage(d, false, false, true)
+    drawImage(d)
 }
