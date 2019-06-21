@@ -9,6 +9,7 @@ import (
     "math/rand"
     "time"
     "github.com/fogleman/gg"
+    fgm "github.com/fogleman/delaunay"
     //"strconv"
     //"runtime/pprof"
     //"flag"
@@ -19,6 +20,7 @@ import (
     "image"
     //"image/draw"
 )
+
 
 func calcEdgeColorFromVertices(img image.Image, bounds image.Rectangle, v1, v2 v.Vector) (float64, float64, float64) {
     xRange := float64(bounds.Max.X-bounds.Min.X)
@@ -146,7 +148,6 @@ func triangulateImage(d sc.Delaunay, drawVertices, drawEdges, drawFaces bool) {
 
 }
 
-
 func drawImage(d sc.Delaunay) {
     var scale float64 = 1.0
     var imageSizeX float64 = 1000
@@ -163,7 +164,7 @@ func drawImage(d sc.Delaunay) {
     for i := 1; i < 10; i++{
 
         x := float64(i)*100*scale
-        y := imageSizeY - float64(i)*100*scale
+        y := float64(i)*100*scale
 
         dc.SetRGB(1, 0.5, 0.5)
         dc.DrawLine(0, y, imageSizeX, y)
@@ -191,7 +192,7 @@ func drawImage(d sc.Delaunay) {
         v1 := d.Vertices[e.VOrigin].Pos
         v2 := d.Vertices[d.Edges[e.ETwin].VOrigin].Pos
 
-        dc.DrawLine(v1.X*scale, imageSizeY-v1.Y*scale, v2.X*scale, imageSizeY-v2.Y*scale)
+        dc.DrawLine(v1.X*scale, v1.Y*scale, v2.X*scale, v2.Y*scale)
         dc.Stroke()
 
         //dc.SetRGB(0, 0, 1)
@@ -219,7 +220,7 @@ func drawImage(d sc.Delaunay) {
             continue
         }
 
-        dc.DrawCircle(v.Pos.X*scale, imageSizeY-v.Pos.Y*scale, 2)
+        dc.DrawCircle(v.Pos.X*scale, v.Pos.Y*scale, 2)
         dc.Fill()
 
         i = i
@@ -233,71 +234,141 @@ func drawImage(d sc.Delaunay) {
     //dc.DrawCircle(501, imageSizeY-578, 5)
     //dc.Fill()
 
-    dc.SavePNG("out.png")
+    dc.SavePNG("out_me.png")
 }
 
-func testUnknownProblem01() sc.Delaunay {
-    fmt.Printf("===========================\n")
-    fmt.Printf("=== test_unknown_problem_01\n")
-    fmt.Printf("===========================\n")
-    count := 10000
-    var seed int64 = time.Now().UTC().UnixNano()
-    seed = seed
-    r := rand.New(rand.NewSource(4))
-    var pointList v.PointList
+func drawFgmImage(points []fgm.Point, triangulation *fgm.Triangulation) {
+	
+	W := 2048
+	H := 2048
+	
+	nextHalfEdge := func(e int) int {
+		if e%3 == 2 {
+			return e - 2
+		}
+		return e + 1
+	}
+		
+	// compute point bounds for rendering
+	min := points[0]
+	max := points[0]
+	for _, p := range points {
+		min.X = math.Min(min.X, p.X)
+		min.Y = math.Min(min.Y, p.Y)
+		max.X = math.Max(max.X, p.X)
+		max.Y = math.Max(max.Y, p.Y)
+	}
+	
+	size := fgm.Point{max.X - min.X, max.Y - min.Y}
+	center := fgm.Point{min.X + size.X/2, min.Y + size.Y/2}
+	scale := math.Min(float64(W)/size.X, float64(H)/size.Y) * 0.9
+	
+	// render points and edges
+	dc := gg.NewContext(W, H)
+	dc.SetRGB(1, 1, 1)
+	dc.Clear()
+	dc.SetRGB(0, 0, 0)
 
-    for i:= 0; i < count; i++ {
-        v := v.Vector{r.Float64()*900+50, r.Float64()*900+50, 0}
-        pointList = append(pointList, v)
-    }
+	dc.Translate(float64(W/2), float64(H/2))
+	dc.Scale(scale, scale)
+	dc.Translate(-center.X, -center.Y)
 
+	ts := triangulation.Triangles
+	hs := triangulation.Halfedges
+	for i, h := range hs {
+		if i > h {
+			p := points[ts[i]]
+			q := points[ts[nextHalfEdge(i)]]
+			dc.DrawLine(p.X, p.Y, q.X, q.Y)
+		}
+	}
+	dc.Stroke()
 
-    return sc.Triangulate(pointList)
+	for _, p := range points {
+		dc.DrawPoint(p.X, p.Y, 5)
+	}
+	dc.Fill()
+
+	for _, p := range triangulation.ConvexHull {
+		dc.LineTo(p.X, p.Y)
+	}
+	dc.ClosePath()
+	dc.SetLineWidth(5)
+	dc.Stroke()
+
+	dc.SavePNG("out.png")	
 }
 
-func testUnknownProblem02() sc.Delaunay {
-    fmt.Printf("===========================\n")
-    fmt.Printf("=== test_unknown_problem_02\n")
-    fmt.Printf("===========================\n")
-    count := 10
-    r := rand.New(rand.NewSource(1525941446937387107))
-    var pointList v.PointList
+func triangulate(myPoints v.PointList, fgmPoints []fgm.Point, renderImage, profileMT, profileFgm bool) {
+	
+	var profiling interface {
+		Stop()
+	}
+	
+	if profileFgm {
+		profiling = profile.Start(profile.CPUProfile)
+	}
+	
+	start := time.Now()
+	var triangulationFgm *fgm.Triangulation
+	var err error
+	if fgmPoints != nil && len(fgmPoints) > 0 {
+		triangulationFgm, err = fgm.Triangulate(fgmPoints)
+		if err != nil{
+			fmt.Printf("Fogleman encountered an error: %v\n", err)
+		}
+	}
+	binTimeFgm := time.Since(start).Nanoseconds()
+	
+	if !profileFgm && profileMT {
+		profiling = profile.Start(profile.CPUProfile)
+	}
 
-    for i:= 0; i < count; i++ {
-        v := v.Vector{r.Float64()*900+50, r.Float64()*900+50, 0}
-        pointList = append(pointList, v)
-    }
-
-    return sc.Triangulate(pointList)
-}
-
-func testUnknownProblem03() sc.Delaunay {
-    fmt.Printf("===========================\n")
-    fmt.Printf("=== test_unknown_problem_03\n")
-    fmt.Printf("===========================\n")
-    count := 2000
-    r := rand.New(rand.NewSource(1525942373618049687))
-    var pointList v.PointList
-
-    for i:= 0; i < count; i++ {
-        v := v.Vector{r.Float64()*900+50, r.Float64()*900+50, 0}
-        pointList = append(pointList, v)
-    }
-
-    start := time.Now()
-    delaunay := sc.Triangulate(pointList)
+    start = time.Now()
+    var triangulationMT sc.Delaunay
+    if myPoints != nil && len(myPoints) > 0 {
+		triangulationMT = sc.Triangulate(myPoints)
+	}
     binTime := time.Since(start).Nanoseconds()
+    
+    if profileFgm || profileMT {
+		profiling.Stop()
+	}
+	
+	errFgm := triangulationFgm.Validate()
+	errMT  := triangulationMT.Verify()
+	if errFgm != nil {
+		fmt.Printf("Fogleman encountered an error: %v\n", errFgm)
+	}
+	if errMT != nil {
+		fmt.Printf("SweepCircle encountered an error: %v\n", errMT)
+	}
 
-    fmt.Printf("Triangulation in Milliseconds: %.8f\n", float64(binTime)/1000000000.0)
+    fmt.Printf("Triangulation (ms): %.8f, Fogleman (ms): %.8f\n", float64(binTime)/1000000.0, float64(binTimeFgm)/1000000.0)
 
-    return delaunay
+	if renderImage {
+		drawImage(triangulationMT)
+		drawFgmImage(fgmPoints, triangulationFgm)
+	}
+	
 }
 
-func testUnknownProblemRandom(count int, scale, margin float64) sc.Delaunay {
+func toFgmList(points v.PointList) []fgm.Point {
+	newPoints := make([]fgm.Point, len(points), len(points))
+	for i,v := range(points) {
+		newPoints[i] = fgm.Point{v.X, v.Y}
+	}
+	return newPoints
+}
+
+func testUnknownProblemRandom(count int) (v.PointList, []fgm.Point) {
     fmt.Printf("===========================\n")
-    fmt.Printf("=== test_unknown_problem_random\n")
+    fmt.Printf("=== test random\n")
     fmt.Printf("===========================\n")
-    //count := 5
+    
+    scale := 1000.0
+    margin := 10.0
+    
     var seed int64 = time.Now().UTC().UnixNano()
     seed = seed
     fmt.Fprintf(os.Stderr, "Seed: %v\n", seed)
@@ -305,104 +376,83 @@ func testUnknownProblemRandom(count int, scale, margin float64) sc.Delaunay {
     var pointList v.PointList
 
     for i:= 0; i < count; i++ {
-        v := v.Vector{r.Float64()*(scale-2*margin)+margin, r.Float64()*(scale-2*margin)+margin, 0}
-        pointList = append(pointList, v)
+        pointList = append(pointList, v.Vector{r.Float64()*(scale-2*margin)+margin, r.Float64()*(scale-2*margin)+margin})
     }
-
-
-    start := time.Now()
-    delaunay := sc.Triangulate(pointList)
-    binTime := time.Since(start).Nanoseconds()
-
-    fmt.Printf("Triangulation in Milliseconds: %.8f\n", float64(binTime)/1000000.0)
-
-    return delaunay
+    
+	return pointList, toFgmList(pointList) 
 }
 
-func testCircle() sc.Delaunay {
+func testCircle(count int) (v.PointList, []fgm.Point) {
     fmt.Printf("===========================\n")
-    fmt.Printf("=== test_unknown_problem_random\n")
+    fmt.Printf("=== test Circle\n")
     fmt.Printf("===========================\n")
-    count := 1000
-    var pointList v.PointList
 
-    center := v.Vector{500, 500, 0}
-    radius := 450.
+    var pointList v.PointList
+    center := v.Vector{500, 500}
+    radius := 350.
 
     for i:= 0; i < count; i++ {
-        newI := v.DegToRad(float64(i)/float64(count)*360.)
-        v := v.Vector{center.X + radius * math.Cos(float64(newI)), center.Y + radius * math.Sin(float64(newI)), 0}
+        newI := v.DegToRad(float64(i)/float64(count)*float64(i))
+        v := v.Vector{center.X + radius * math.Cos(float64(newI)), center.Y + radius * math.Sin(float64(newI))}
+        
         pointList = append(pointList, v)
     }
+    
+    //radius = 450.
+	//
+    //for i:= 0; i < count; i++ {
+    //    newI := v.DegToRad(float64(i)/float64(count)*360.)
+    //    v := v.Vector{center.X + radius * math.Cos(float64(newI)), center.Y + radius * math.Sin(float64(newI))}
+    //    pointList = append(pointList, v)
+    //}
 
-    pointList = append(pointList, v.Vector{500, 500, 0})
-
-    start := time.Now()
-    delaunay := sc.Triangulate(pointList)
-    binTime := time.Since(start).Nanoseconds()
-
-    fmt.Printf("Triangulation in Milliseconds: %.8f\n", float64(binTime)/1000000.0)
-
-    return delaunay
+    //pointList = append(pointList, v.Vector{500, 500})
+    
+    return pointList, toFgmList(pointList) 
 }
 
-
-
-func testWaveCenterMirrored() sc.Delaunay {
+func testWaveCenterMirrored(count int) (v.PointList, []fgm.Point) {
     fmt.Printf("===========================\n")
-    fmt.Printf("=== test_unknown_problem_random\n")
+    fmt.Printf("=== test wave center mirrored\n")
     fmt.Printf("===========================\n")
-    count := 15
+  
     var pointList v.PointList
 
     for i := 0; i <= count; i++ {
 
             newI := v.DegToRad(float64(i)/float64(count)*360.*5.0)
 
-            v := v.Vector{float64(i)/float64(count)*900+50, math.Sin(newI)*450.+500, 0}
+            v := v.Vector{float64(i)/float64(count)*900+50, math.Sin(newI)*450.+500}
             //fmt.Println(v)
             pointList = append(pointList, v)
     }
 
-    start := time.Now()
-    delaunay := sc.Triangulate(pointList)
-    binTime := time.Since(start).Nanoseconds()
-
-    fmt.Printf("Triangulation in Milliseconds: %.8f\n", float64(binTime)/1000000.0)
-
-    return delaunay
+    return pointList, toFgmList(pointList) 
 }
 
-func testWave() sc.Delaunay {
+func testWave(count int) (v.PointList, []fgm.Point) {
     fmt.Printf("===========================\n")
-    fmt.Printf("=== test_unknown_problem_random\n")
+    fmt.Printf("=== test wave\n")
     fmt.Printf("===========================\n")
-    count := 150
+
     var pointList v.PointList
 
     for i := 0; i <= count; i++ {
-
             newI := v.DegToRad(float64(i)/float64(count)*360.)
 
-            v := v.Vector{float64(i)/float64(count)*900+50, math.Sin(newI)*450.+500, 0}
+            v := v.Vector{float64(i)/float64(count)*900+50, math.Sin(newI)*450.+500}
             //fmt.Println(v)
             pointList = append(pointList, v)
     }
 
-    start := time.Now()
-    delaunay := sc.Triangulate(pointList)
-    binTime := time.Since(start).Nanoseconds()
-
-    fmt.Printf("Triangulation in Milliseconds: %.8f\n", float64(binTime)/1000000.0)
-
-    return delaunay
+    return pointList, toFgmList(pointList) 
 }
 
-func testTiltedGrid(tiltAngle float64) sc.Delaunay {
+func testTiltedGrid(count int, tiltAngle float64) (v.PointList, []fgm.Point) {
     fmt.Printf("===========================\n")
-    fmt.Printf("=== test_grid\n")
+    fmt.Printf("=== test tilted grid\n")
     fmt.Printf("===========================\n")
-    count := 50
+    
     angle := v.DegToRad(tiltAngle)
 
     var pointList v.PointList
@@ -415,33 +465,26 @@ func testTiltedGrid(tiltAngle float64) sc.Delaunay {
             tiltedY := (newY-500.) * math.Cos(angle) + (newX-500.) * math.Sin(angle)
             tiltedX += 500.
             tiltedY += 500.
-            v := v.Vector{tiltedX, tiltedY, 0}
+            v := v.Vector{tiltedX, tiltedY}
             pointList = append(pointList, v)
         }
     }
 
-    start := time.Now()
-    delaunay := sc.Triangulate(pointList)
-    binTime := time.Since(start).Nanoseconds()
-
-    fmt.Printf("Triangulation in Milliseconds: %.8f\n", float64(binTime)/1000000.0)
-
-    return delaunay
+    return pointList, toFgmList(pointList) 
 }
 
 func main() {
 
-    defer profile.Start(profile.CPUProfile).Stop()
-
-    var d sc.Delaunay
-    //d = testUnknownProblem03()
-    //d = testUnknownProblemRandom(13000, 1000, 10)
-    //d = testTiltedGrid(0.0)
-    //d = testTiltedGrid(89.0)
-    //d = testTiltedGrid(45.0)
-    //d = testCircle()
-    d = testWave()
-    d = d
+	var myP v.PointList
+	var fgmP []fgm.Point
+    myP, fgmP = testUnknownProblemRandom(10) 
+    triangulate(myP, fgmP, true, false, false)
+    //d = testTiltedGrid(50, 0.0)
+    //d = testTiltedGrid(50, 89.0)
+    //d = testTiltedGrid(50, 45.0)
+    //myP, fgmP = testCircle(100)
+    //triangulate(myP, fgmP, false, false, false)
+    //d = testWave()
 
     ///=========== Frontier: Slice ==================================///
 
@@ -523,13 +566,23 @@ func main() {
     // 2000000  points  9.37676779900
     // 5000000  points  24.3403684720
 
+	///=========== Maurice Laptop -- with Profiling ======================///
+	
+	///=========== Github-Stand ======================///	
+	// 1000000  points  9.17114756000
+	///=========== 2D-Points ======================///
+	// 1000000  points  8.27235414300
+	///=========== Length squared ======================///
+	// 1000000  points  8.11650684100
+	///=========== Angle rad ======================///
+	// 1000000  points  8.05951195700
+	///=========== Fast acos ======================///
+	// 1000000  points  7.65465191200
+	///=========== Skiplist height adjustment ======================///
+	// 1000000  points  7.45683164800
+	///=========== Triangle valid from Fogleman ======================///
+	// 1000000  points  6.33755930000
+	///=========== Multithreaded preparation ======================///
+	// 1000000  points  6.17650878400
 
-
-
-    //fmt.Println(d)
-    fmt.Println(d.Verify())
-    //fmt.Println(d)
-
-    //triangulateImage(d, false, false, true)
-    drawImage(d)
 }
