@@ -477,7 +477,7 @@ func main() {
 
 	var myP v.PointList
 	var fgmP []fgm.Point
-    myP, fgmP = testUnknownProblemRandom(10) 
+    myP, fgmP = testUnknownProblemRandom(5) 
     triangulate(myP, fgmP, true, false, false)
     //d = testTiltedGrid(50, 0.0)
     //d = testTiltedGrid(50, 89.0)
