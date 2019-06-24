@@ -5,7 +5,8 @@ import (
 	"math"
 	"math/rand"
 	sc "mtSweepCircle"
-	v "mtVector"
+
+	//v "mtVector"
 	"os"
 	"time"
 
@@ -17,137 +18,12 @@ import (
 	//"flag"
 	//"log"
 	//"runtime"
-	"image"
-	"image/png"
+	//"image"
+	//"image/png"
 
 	"github.com/pkg/profile"
 	//"image/draw"
 )
-
-func calcEdgeColorFromVertices(img image.Image, bounds image.Rectangle, v1, v2 v.Vector) (float64, float64, float64) {
-	xRange := float64(bounds.Max.X - bounds.Min.X)
-	yRange := float64(bounds.Max.Y - bounds.Min.Y)
-	r1, g1, b1, _ := img.At(int(v1.X/1000.0*xRange), int(v1.Y/1000.0*yRange)).RGBA()
-	r2, g2, b2, _ := img.At(int(v2.X/1000.0*xRange), int(v2.Y/1000.0*yRange)).RGBA()
-
-	return float64(((r1+r2)/2)>>8) / 255., float64(((g1+g2)/2)>>8) / 255., float64(((b1+b2)/2.0)>>8) / 255.
-}
-
-func calcFaceColor(img image.Image, bounds image.Rectangle, v1, v2, v3 v.Vector) (float64, float64, float64) {
-	xRange := float64(bounds.Max.X - bounds.Min.X)
-	yRange := float64(bounds.Max.Y - bounds.Min.Y)
-
-	r1, g1, b1, _ := img.At(int(v1.X/1000.0*xRange), int(v1.Y/1000.0*yRange)).RGBA()
-	r2, g2, b2, _ := img.At(int(v2.X/1000.0*xRange), int(v2.Y/1000.0*yRange)).RGBA()
-	r3, g3, b3, _ := img.At(int(v3.X/1000.0*xRange), int(v3.Y/1000.0*yRange)).RGBA()
-	center := v.Div(v.Add(v.Add(v1, v2), v3), 3)
-	rc, gc, bc, _ := img.At(int(center.X/1000.0*xRange), int(center.Y/1000.0*yRange)).RGBA()
-
-	r := float64(((r1+r2+r3+rc)/4)>>8) / 255.
-	g := float64(((g1+g2+g3+gc)/4)>>8) / 255.
-	b := float64(((b1+b2+b3+bc)/4)>>8) / 255.
-
-	return r, g, b
-}
-
-func triangulateImage(d sc.Delaunay, drawVertices, drawEdges, drawFaces bool) {
-	file, err := os.Open("./deadpool.png")
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer file.Close()
-
-	img, err := png.Decode(file)
-	if err != nil {
-		fmt.Printf("%s: %v\n", "./kaktusfeige.png\n", err)
-	}
-
-	b := img.Bounds()
-	//rgba := image.NewRGBA(b)
-	//draw.Draw(rgba, b, img, b.Min, draw.Src)
-
-	var imageSizeX float64 = 1000
-	var imageSizeY float64 = 1000
-	dc := gg.NewContext(int(imageSizeX), int(imageSizeY))
-
-	// Background filling in white
-	dc.SetRGB(1, 1, 1)
-	dc.Clear()
-
-	dc.SetRGB(1, 0, 0)
-
-	for _, f := range d.Faces {
-
-		v1 := d.Vertices[d.Edges[f.EEdge].VOrigin].Pos
-		v2 := d.Vertices[d.Edges[d.Edges[f.EEdge].ENext].VOrigin].Pos
-		v3 := d.Vertices[d.Edges[d.Edges[d.Edges[f.EEdge].ENext].ENext].VOrigin].Pos
-
-		if drawFaces {
-			dc.SetLineWidth(1.0)
-			dc.SetRGB(calcFaceColor(img, b, v1, v2, v3))
-
-			dc.MoveTo(v1.X, v1.Y)
-			dc.LineTo(v2.X, v2.Y)
-			dc.LineTo(v3.X, v3.Y)
-			dc.LineTo(v1.X, v1.Y)
-			dc.ClosePath()
-			dc.Fill()
-
-			dc.SetRGB(0.9902, 0.9902, 0.9902)
-
-			dc.DrawLine(v1.X, v1.Y, v2.X, v2.Y)
-			dc.Stroke()
-
-			dc.DrawLine(v2.X, v2.Y, v3.X, v3.Y)
-			dc.Stroke()
-
-			dc.DrawLine(v3.X, v3.Y, v1.X, v1.Y)
-			dc.Stroke()
-			dc.Fill()
-
-		}
-
-		if drawEdges {
-			dc.SetLineWidth(2.0)
-			dc.SetRGB(calcEdgeColorFromVertices(img, b, v1, v2))
-			dc.DrawLine(v1.X, v1.Y, v2.X, v2.Y)
-			dc.Stroke()
-
-			dc.SetRGB(calcEdgeColorFromVertices(img, b, v2, v3))
-			dc.DrawLine(v2.X, v2.Y, v3.X, v3.Y)
-			dc.Stroke()
-
-			dc.SetRGB(calcEdgeColorFromVertices(img, b, v3, v1))
-			dc.DrawLine(v3.X, v3.Y, v1.X, v1.Y)
-			dc.Stroke()
-			dc.Fill()
-		}
-	}
-
-	if drawVertices {
-		for _, v := range d.Vertices {
-
-			if v == sc.EmptyV {
-				continue
-			}
-
-			xRange := float64(b.Max.X - b.Min.X)
-			yRange := float64(b.Max.Y - b.Min.Y)
-
-			xRelPos := v.Pos.X / 1000.0
-			yRelPos := v.Pos.Y / 1000.0
-
-			r, g, b, _ := img.At(int(xRelPos*xRange), int(yRelPos*yRange)).RGBA()
-			dc.SetRGB(float64(r>>8)/255., float64(g>>8)/255., float64(b>>8)/255.)
-
-			dc.DrawCircle(v.Pos.X, v.Pos.Y, 2)
-			dc.Fill()
-		}
-	}
-
-	dc.SavePNG("triangulatedImage.png")
-
-}
 
 func drawImage(d sc.Delaunay, imageName string) {
 	var scale float64 = 1.0
@@ -199,8 +75,8 @@ func drawImage(d sc.Delaunay, imageName string) {
 		//dc.DrawString(fmt.Sprintf("(%.1f, %.1f)", v1.X, v1.Y), v1.X, imageSizeY-v1.Y)
 		//
 		//dc.SetRGB(0, 0.5, 0)
-		//middleP := v.Vector{(v1.X+v2.X)/2., (v1.Y+v2.Y)/2., 0}
-		//ortho   := v.Vector{0,0,1}
+		//middleP := sc.Vector{(v1.X+v2.X)/2., (v1.Y+v2.Y)/2., 0}
+		//ortho   := sc.Vector{0,0,1}
 		//crossP  := v.Cross(v.Sub(v1, v2), ortho)
 		//crossP.Div(v.Length(crossP))
 		//crossP.Mult(15.)
@@ -302,7 +178,7 @@ func drawFgmImage(points []fgm.Point, triangulation *fgm.Triangulation, imageNam
 	dc.SavePNG(imageName + ".png")
 }
 
-func triangulate(myPoints v.PointList, fgmPoints []fgm.Point, renderImage, profileMT, profileFgm bool, imageName string) {
+func triangulate(myPoints sc.PointList, fgmPoints []fgm.Point, renderImage, profileMT, profileFgm bool, imageName string) {
 
 	var profiling interface {
 		Stop()
@@ -356,7 +232,7 @@ func triangulate(myPoints v.PointList, fgmPoints []fgm.Point, renderImage, profi
 
 }
 
-func toFgmList(points v.PointList) []fgm.Point {
+func toFgmList(points sc.PointList) []fgm.Point {
 	newPoints := make([]fgm.Point, len(points), len(points))
 	for i, v := range points {
 		newPoints[i] = fgm.Point{v.X, v.Y}
@@ -364,7 +240,7 @@ func toFgmList(points v.PointList) []fgm.Point {
 	return newPoints
 }
 
-func testUnknownProblemRandom(count int) (v.PointList, []fgm.Point) {
+func testUnknownProblemRandom(count int) (sc.PointList, []fgm.Point) {
 	fmt.Printf("===========================\n")
 	fmt.Printf("=== test random\n")
 	fmt.Printf("===========================\n")
@@ -376,27 +252,27 @@ func testUnknownProblemRandom(count int) (v.PointList, []fgm.Point) {
 	seed = seed
 	fmt.Fprintf(os.Stderr, "Seed: %v\n", seed)
 	r := rand.New(rand.NewSource(1533982892382782961))
-	var pointList v.PointList
+	var pointList sc.PointList
 
 	for i := 0; i < count; i++ {
-		pointList = append(pointList, v.Vector{r.Float64()*(scale-2*margin) + margin, r.Float64()*(scale-2*margin) + margin})
+		pointList = append(pointList, sc.Vector{r.Float64()*(scale-2*margin) + margin, r.Float64()*(scale-2*margin) + margin})
 	}
 
 	return pointList, toFgmList(pointList)
 }
 
-func testCircle(count int) (v.PointList, []fgm.Point) {
+func testCircle(count int) (sc.PointList, []fgm.Point) {
 	fmt.Printf("===========================\n")
 	fmt.Printf("=== test Circle\n")
 	fmt.Printf("===========================\n")
 
-	var pointList v.PointList
-	center := v.Vector{500, 500}
+	var pointList sc.PointList
+	center := sc.Vector{500, 500}
 	radius := 350.
 
 	for i := 0; i < count; i++ {
-		newI := v.DegToRad(float64(i) / float64(count) * float64(i))
-		v := v.Vector{center.X + radius*math.Cos(float64(newI)), center.Y + radius*math.Sin(float64(newI))}
+		newI := sc.DegToRad(float64(i) / float64(count) * float64(i))
+		v := sc.Vector{center.X + radius*math.Cos(float64(newI)), center.Y + radius*math.Sin(float64(newI))}
 
 		pointList = append(pointList, v)
 	}
@@ -404,18 +280,18 @@ func testCircle(count int) (v.PointList, []fgm.Point) {
 	return pointList, toFgmList(pointList)
 }
 
-func testDoubleCircle(count int) (v.PointList, []fgm.Point) {
+func testDoubleCircle(count int) (sc.PointList, []fgm.Point) {
 	fmt.Printf("===========================\n")
 	fmt.Printf("=== test Circle\n")
 	fmt.Printf("===========================\n")
 
-	var pointList v.PointList
-	center := v.Vector{500, 500}
+	var pointList sc.PointList
+	center := sc.Vector{500, 500}
 	radius := 350.
 
 	for i := 0; i < count/2; i++ {
-		newI := v.DegToRad(float64(i) / float64(count/2) * float64(i))
-		v := v.Vector{center.X + radius*math.Cos(float64(newI)), center.Y + radius*math.Sin(float64(newI))}
+		newI := sc.DegToRad(float64(i) / float64(count/2) * float64(i))
+		v := sc.Vector{center.X + radius*math.Cos(float64(newI)), center.Y + radius*math.Sin(float64(newI))}
 
 		pointList = append(pointList, v)
 	}
@@ -423,28 +299,28 @@ func testDoubleCircle(count int) (v.PointList, []fgm.Point) {
 	radius = 450.
 
 	for i := 0; i < count/2; i++ {
-		newI := v.DegToRad(float64(i) / float64(count/2) * 360.)
-		v := v.Vector{center.X + radius*math.Cos(float64(newI)), center.Y + radius*math.Sin(float64(newI))}
+		newI := sc.DegToRad(float64(i) / float64(count/2) * 360.)
+		v := sc.Vector{center.X + radius*math.Cos(float64(newI)), center.Y + radius*math.Sin(float64(newI))}
 		pointList = append(pointList, v)
 	}
 
-	//pointList = append(pointList, v.Vector{500, 500})
+	//pointList = append(pointList, sc.Vector{500, 500})
 
 	return pointList, toFgmList(pointList)
 }
 
-func testWaveCenterMirrored(count int) (v.PointList, []fgm.Point) {
+func testWaveCenterMirrored(count int) (sc.PointList, []fgm.Point) {
 	fmt.Printf("===========================\n")
 	fmt.Printf("=== test wave center mirrored\n")
 	fmt.Printf("===========================\n")
 
-	var pointList v.PointList
+	var pointList sc.PointList
 
 	for i := 0; i <= count; i++ {
 
-		newI := v.DegToRad(float64(i) / float64(count) * 360. * 5.0)
+		newI := sc.DegToRad(float64(i) / float64(count) * 360. * 5.0)
 
-		v := v.Vector{float64(i)/float64(count)*900 + 50, math.Sin(newI)*450. + 500}
+		v := sc.Vector{float64(i)/float64(count)*900 + 50, math.Sin(newI)*450. + 500}
 		//fmt.Println(v)
 		pointList = append(pointList, v)
 	}
@@ -452,17 +328,17 @@ func testWaveCenterMirrored(count int) (v.PointList, []fgm.Point) {
 	return pointList, toFgmList(pointList)
 }
 
-func testWave(count int) (v.PointList, []fgm.Point) {
+func testWave(count int) (sc.PointList, []fgm.Point) {
 	fmt.Printf("===========================\n")
 	fmt.Printf("=== test wave\n")
 	fmt.Printf("===========================\n")
 
-	var pointList v.PointList
+	var pointList sc.PointList
 
 	for i := 0; i <= count; i++ {
-		newI := v.DegToRad(float64(i) / float64(count) * 360.)
+		newI := sc.DegToRad(float64(i) / float64(count) * 360.)
 
-		v := v.Vector{float64(i)/float64(count)*900 + 50, math.Sin(newI)*450. + 500}
+		v := sc.Vector{float64(i)/float64(count)*900 + 50, math.Sin(newI)*450. + 500}
 		//fmt.Println(v)
 		pointList = append(pointList, v)
 	}
@@ -470,14 +346,14 @@ func testWave(count int) (v.PointList, []fgm.Point) {
 	return pointList, toFgmList(pointList)
 }
 
-func testTiltedGrid(count int, tiltAngle float64) (v.PointList, []fgm.Point) {
+func testTiltedGrid(count int, tiltAngle float64) (sc.PointList, []fgm.Point) {
 	fmt.Printf("===========================\n")
 	fmt.Printf("=== test tilted grid\n")
 	fmt.Printf("===========================\n")
 
-	angle := v.DegToRad(tiltAngle)
+	angle := sc.DegToRad(tiltAngle)
 
-	var pointList v.PointList
+	var pointList sc.PointList
 
 	for x := 0; x <= count; x++ {
 		newX := float64(x)/float64(count)*900. + 50.
@@ -487,7 +363,7 @@ func testTiltedGrid(count int, tiltAngle float64) (v.PointList, []fgm.Point) {
 			tiltedY := (newY-500.)*math.Cos(angle) + (newX-500.)*math.Sin(angle)
 			tiltedX += 500.
 			tiltedY += 500.
-			v := v.Vector{tiltedX, tiltedY}
+			v := sc.Vector{tiltedX, tiltedY}
 			pointList = append(pointList, v)
 		}
 	}
@@ -497,10 +373,10 @@ func testTiltedGrid(count int, tiltAngle float64) (v.PointList, []fgm.Point) {
 
 func main() {
 
-	var myP v.PointList
+	var myP sc.PointList
 	var fgmP []fgm.Point
-	myP, fgmP = testUnknownProblemRandom(1000)
-	triangulate(myP, fgmP, true, false, false, "random")
+	myP, fgmP = testUnknownProblemRandom(1000000)
+	triangulate(myP, fgmP, false, false, false, "random")
 	//myP, fgmP = testCircle(100000)
 	//triangulate(myP, fgmP, false, false, false, "circle")
 
