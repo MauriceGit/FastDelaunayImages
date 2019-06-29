@@ -251,7 +251,7 @@ func testUnknownProblemRandom(count int) ([]sc.Vector, []fgm.Point) {
 	var seed int64 = time.Now().UTC().UnixNano()
 	seed = seed
 	fmt.Fprintf(os.Stderr, "Seed: %v\n", seed)
-	r := rand.New(rand.NewSource(1533982892382782961))
+	r := rand.New(rand.NewSource(seed))
 	var pointList []sc.Vector
 
 	for i := 0; i < count; i++ {
@@ -375,7 +375,7 @@ func main() {
 
 	var myP []sc.Vector
 	var fgmP []fgm.Point
-	myP, fgmP = testUnknownProblemRandom(1000000)
+	myP, fgmP = testUnknownProblemRandom(10000000)
 	triangulate(myP, fgmP, false, true, false, "random")
 	//myP, fgmP = testCircle(100000)
 	//triangulate(myP, fgmP, false, false, false, "circle")
