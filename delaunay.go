@@ -178,7 +178,7 @@ func drawFgmImage(points []fgm.Point, triangulation *fgm.Triangulation, imageNam
 	dc.SavePNG(imageName + ".png")
 }
 
-func triangulate(myPoints sc.PointList, fgmPoints []fgm.Point, renderImage, profileMT, profileFgm bool, imageName string) {
+func triangulate(myPoints []sc.Vector, fgmPoints []fgm.Point, renderImage, profileMT, profileFgm bool, imageName string) {
 
 	var profiling interface {
 		Stop()
@@ -232,7 +232,7 @@ func triangulate(myPoints sc.PointList, fgmPoints []fgm.Point, renderImage, prof
 
 }
 
-func toFgmList(points sc.PointList) []fgm.Point {
+func toFgmList(points []sc.Vector) []fgm.Point {
 	newPoints := make([]fgm.Point, len(points), len(points))
 	for i, v := range points {
 		newPoints[i] = fgm.Point{v.X, v.Y}
@@ -240,7 +240,7 @@ func toFgmList(points sc.PointList) []fgm.Point {
 	return newPoints
 }
 
-func testUnknownProblemRandom(count int) (sc.PointList, []fgm.Point) {
+func testUnknownProblemRandom(count int) ([]sc.Vector, []fgm.Point) {
 	fmt.Printf("===========================\n")
 	fmt.Printf("=== test random\n")
 	fmt.Printf("===========================\n")
@@ -252,7 +252,7 @@ func testUnknownProblemRandom(count int) (sc.PointList, []fgm.Point) {
 	seed = seed
 	fmt.Fprintf(os.Stderr, "Seed: %v\n", seed)
 	r := rand.New(rand.NewSource(1533982892382782961))
-	var pointList sc.PointList
+	var pointList []sc.Vector
 
 	for i := 0; i < count; i++ {
 		pointList = append(pointList, sc.Vector{r.Float64()*(scale-2*margin) + margin, r.Float64()*(scale-2*margin) + margin})
@@ -261,12 +261,12 @@ func testUnknownProblemRandom(count int) (sc.PointList, []fgm.Point) {
 	return pointList, toFgmList(pointList)
 }
 
-func testCircle(count int) (sc.PointList, []fgm.Point) {
+func testCircle(count int) ([]sc.Vector, []fgm.Point) {
 	fmt.Printf("===========================\n")
 	fmt.Printf("=== test Circle\n")
 	fmt.Printf("===========================\n")
 
-	var pointList sc.PointList
+	var pointList []sc.Vector
 	center := sc.Vector{500, 500}
 	radius := 350.
 
@@ -280,12 +280,12 @@ func testCircle(count int) (sc.PointList, []fgm.Point) {
 	return pointList, toFgmList(pointList)
 }
 
-func testDoubleCircle(count int) (sc.PointList, []fgm.Point) {
+func testDoubleCircle(count int) ([]sc.Vector, []fgm.Point) {
 	fmt.Printf("===========================\n")
 	fmt.Printf("=== test Circle\n")
 	fmt.Printf("===========================\n")
 
-	var pointList sc.PointList
+	var pointList []sc.Vector
 	center := sc.Vector{500, 500}
 	radius := 350.
 
@@ -309,12 +309,12 @@ func testDoubleCircle(count int) (sc.PointList, []fgm.Point) {
 	return pointList, toFgmList(pointList)
 }
 
-func testWaveCenterMirrored(count int) (sc.PointList, []fgm.Point) {
+func testWaveCenterMirrored(count int) ([]sc.Vector, []fgm.Point) {
 	fmt.Printf("===========================\n")
 	fmt.Printf("=== test wave center mirrored\n")
 	fmt.Printf("===========================\n")
 
-	var pointList sc.PointList
+	var pointList []sc.Vector
 
 	for i := 0; i <= count; i++ {
 
@@ -328,12 +328,12 @@ func testWaveCenterMirrored(count int) (sc.PointList, []fgm.Point) {
 	return pointList, toFgmList(pointList)
 }
 
-func testWave(count int) (sc.PointList, []fgm.Point) {
+func testWave(count int) ([]sc.Vector, []fgm.Point) {
 	fmt.Printf("===========================\n")
 	fmt.Printf("=== test wave\n")
 	fmt.Printf("===========================\n")
 
-	var pointList sc.PointList
+	var pointList []sc.Vector
 
 	for i := 0; i <= count; i++ {
 		newI := sc.DegToRad(float64(i) / float64(count) * 360.)
@@ -346,14 +346,14 @@ func testWave(count int) (sc.PointList, []fgm.Point) {
 	return pointList, toFgmList(pointList)
 }
 
-func testTiltedGrid(count int, tiltAngle float64) (sc.PointList, []fgm.Point) {
+func testTiltedGrid(count int, tiltAngle float64) ([]sc.Vector, []fgm.Point) {
 	fmt.Printf("===========================\n")
 	fmt.Printf("=== test tilted grid\n")
 	fmt.Printf("===========================\n")
 
 	angle := sc.DegToRad(tiltAngle)
 
-	var pointList sc.PointList
+	var pointList []sc.Vector
 
 	for x := 0; x <= count; x++ {
 		newX := float64(x)/float64(count)*900. + 50.
@@ -373,15 +373,17 @@ func testTiltedGrid(count int, tiltAngle float64) (sc.PointList, []fgm.Point) {
 
 func main() {
 
-	var myP sc.PointList
+	var myP []sc.Vector
 	var fgmP []fgm.Point
 	myP, fgmP = testUnknownProblemRandom(1000000)
-	triangulate(myP, fgmP, false, false, false, "random")
+	triangulate(myP, fgmP, false, true, false, "random")
 	//myP, fgmP = testCircle(100000)
 	//triangulate(myP, fgmP, false, false, false, "circle")
 
-	myP, fgmP = testDoubleCircle(20)
+	myP, fgmP = testDoubleCircle(10000)
 	triangulate(myP, fgmP, false, false, false, "double_circle")
+	myP, fgmP = testCircle(50000)
+	triangulate(myP, fgmP, false, false, false, "circle")
 	/*
 		myP, fgmP = testTiltedGrid(50, 0.0)
 		triangulate(myP, fgmP, true, false, false, "tilted_0")
