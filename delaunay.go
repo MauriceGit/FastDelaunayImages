@@ -377,7 +377,7 @@ func main() {
 
 	var myP []sc.Vector
 	var fgmP []fgm.Point
-	myP, fgmP = testUnknownProblemRandom(10000000)
+	myP, fgmP = testUnknownProblemRandom(1000000)
 	triangulate(myP, fgmP, false, false, false, "random")
 
 	/*
