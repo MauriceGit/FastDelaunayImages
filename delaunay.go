@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
-	sc "mtSweepCircle"
+
+	//sc "mtSweepCircle"
+	sc "github.com/MauriceGit/sweepcircle"
 
 	//v "mtVector"
 	"os"
@@ -268,10 +270,10 @@ func testCircle(count int) ([]sc.Vector, []fgm.Point) {
 
 	var pointList []sc.Vector
 	center := sc.Vector{500, 500}
-	radius := 350.
+	radius := 450.
 
 	for i := 0; i < count; i++ {
-		newI := sc.DegToRad(float64(i) / float64(count) * float64(i))
+		newI := sc.DegToRad(float64(i) / float64(count) * 360.)
 		v := sc.Vector{center.X + radius*math.Cos(float64(newI)), center.Y + radius*math.Sin(float64(newI))}
 
 		pointList = append(pointList, v)
@@ -376,14 +378,15 @@ func main() {
 	var myP []sc.Vector
 	var fgmP []fgm.Point
 	myP, fgmP = testUnknownProblemRandom(10000000)
-	triangulate(myP, fgmP, false, true, false, "random")
-	//myP, fgmP = testCircle(100000)
-	//triangulate(myP, fgmP, false, false, false, "circle")
+	triangulate(myP, fgmP, false, false, false, "random")
 
-	myP, fgmP = testDoubleCircle(10000)
-	triangulate(myP, fgmP, false, false, false, "double_circle")
-	myP, fgmP = testCircle(50000)
-	triangulate(myP, fgmP, false, false, false, "circle")
+	/*
+		myP, fgmP = testDoubleCircle(10000)
+		triangulate(myP, fgmP, false, false, false, "double_circle")
+		myP, fgmP = testCircle(50000)
+		triangulate(myP, fgmP, false, false, false, "circle")
+	*/
+
 	/*
 		myP, fgmP = testTiltedGrid(50, 0.0)
 		triangulate(myP, fgmP, true, false, false, "tilted_0")
@@ -400,8 +403,6 @@ func main() {
 		myP, fgmP = testWave(100)
 		triangulate(myP, fgmP, true, false, false, "wave")
 	*/
-
-	//d = testWave()
 
 	///=========== Frontier: Slice ==================================///
 
@@ -503,6 +504,13 @@ func main() {
 	// 1000000  points  6.17650878400
 
 	///=========== New PC -- No profiling ======================///
+	// ArrayMap instead of skiplist
+	// 2D point math
+	// Fast Acos approximation
+	// Only use rad angle
+	// Squared distance
+	// Triangle validation from Fogleman
+	///=============================================
 
 	// 10       points  0.00014780400	0.00003631600
 	// 100      points  0.00043934400	0.00019591000
@@ -513,5 +521,21 @@ func main() {
 	// 2000000  points  1.67112829300	2.17478010300
 	// 5000000  points  4.37922068100	6.26767477000
 	// 10000000 points  9.12704656300	14.4532323540
+
+	///=============================================
+	// Fast arrayMap (with mem pool)
+	// Custom Quicksort
+	// No Delaunay edge re-creation
+	///=============================================
+
+	// 10       points  0.00019367300	0.00003631600
+	// 100      points  0.00039306300	0.00019591000
+	// 1000     points  0.00283277200	0.00211053000
+	// 10000    points  0.00602252900	0.00607904100
+	// 100000   points  0.05958530500	0.06884289200
+	// 1000000  points  0.64559663300	0.96240224000
+	// 2000000  points  1.33272351500	2.17478010300
+	// 5000000  points  3.55517294500	6.26767477000
+	// 10000000 points  7.36102560900	14.4532323540
 
 }
