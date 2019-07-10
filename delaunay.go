@@ -68,8 +68,8 @@ func drawImage(d sc.Delaunay, imageName string) {
 
 		dc.SetRGB(0, 0, 0)
 
-		v1 := d.Vertices[e.VOrigin].Pos
-		v2 := d.Vertices[d.Edges[e.ETwin].VOrigin].Pos
+		v1 := e.VOrigin.Pos
+		v2 := e.ETwin.VOrigin.Pos
 
 		dc.DrawLine(v1.X*scale, v1.Y*scale, v2.X*scale, v2.Y*scale)
 
@@ -212,31 +212,20 @@ func triangulate(myPoints []sc.Vector, fgmPoints []fgm.Point, renderImage, profi
 	}
 	binTime := time.Since(start).Nanoseconds()
 
-	start = time.Now()
-	var voronoiMT sc.Voronoi
-	if myPoints != nil && len(myPoints) > 0 {
-		voronoiMT = triangulationMT.CreateVoronoi()
-	}
-	binTimeVoronoi := time.Since(start).Nanoseconds()
-
 	if profileFgm || profileMT {
 		profiling.Stop()
 	}
 
 	errFgm := triangulationFgm.Validate()
 	errMT := triangulationMT.Verify()
-	errMTV := voronoiMT.Verify()
 	if errFgm != nil {
 		//fmt.Printf("Fogleman encountered an error: %v\n", errFgm)
 	}
 	if errMT != nil {
 		fmt.Printf("SweepCircle encountered an error: %v\n", errMT)
 	}
-	if errMTV != nil {
-		fmt.Printf("Voronoi encountered an error: %v\n", errMTV)
-	}
 
-	fmt.Printf("Triangulation (ms): %.8f, Voronoi (ms): %.8f, Fogleman (ms): %.8f\n", float64(binTime)/1000000.0, float64(binTimeVoronoi)/1000000.0, float64(binTimeFgm)/1000000.0)
+	fmt.Printf("Triangulation (ms): %.8f, Fogleman (ms): %.8f\n", float64(binTime)/1000000.0, float64(binTimeFgm)/1000000.0)
 
 	if renderImage {
 		drawImage(triangulationMT, imageName+"_mt_")
