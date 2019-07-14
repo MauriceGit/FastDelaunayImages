@@ -27,7 +27,7 @@ import (
 	//"image/draw"
 )
 
-func drawImage(d sc.Delaunay, imageName string) {
+func drawImage(d sc.Delaunay, imageName string, drawDetails bool) {
 	var scale float64 = 1.0
 	var imageSizeX float64 = 2000
 	var imageSizeY float64 = 2000
@@ -53,8 +53,8 @@ func drawImage(d sc.Delaunay, imageName string) {
 
 		dc.SetRGB(1, 0.0, 0.0)
 		// X axis
-		//dc.DrawString(strconv.Itoa(int(x)), x+10, imageSizeY-10)
-		//// Y axis
+		//dc.DrawString(strconv.Itoa(int(x)), x+10, (imageSizeY/2)-10)
+		// Y axis
 		//dc.DrawString(strconv.Itoa(int(imageSizeY-y)), 10, y-10)
 
 	}
@@ -73,21 +73,21 @@ func drawImage(d sc.Delaunay, imageName string) {
 
 		dc.DrawLine(v1.X*scale, v1.Y*scale, v2.X*scale, v2.Y*scale)
 
-		//dc.SetRGB(0, 0, 1)
-		//dc.DrawString(fmt.Sprintf("(%.1f, %.1f)", v1.X, v1.Y), v1.X, imageSizeY-v1.Y)
-		//
-		//dc.SetRGB(0, 0.5, 0)
-		//middleP := sc.Vector{(v1.X+v2.X)/2., (v1.Y+v2.Y)/2., 0}
-		//ortho   := sc.Vector{0,0,1}
-		//crossP  := v.Cross(v.Sub(v1, v2), ortho)
-		//crossP.Div(v.Length(crossP))
-		//crossP.Mult(15.)
-		//
-		//middleP.Add(crossP)
-		//
-		i = i
-		//s := fmt.Sprintf("(%d)", i)
-		//dc.DrawStringAnchored(s, middleP.X, imageSizeY-middleP.Y, 0.5, 0.5)
+		if drawDetails {
+			dc.SetRGB(0, 0.5, 0)
+			middleP := sc.Vector{(v1.X + v2.X) / 2., (v1.Y + v2.Y) / 2.}
+
+			crossP := sc.Perpendicular(sc.Sub(v1, v2))
+
+			crossP.Div(sc.Length(crossP))
+			crossP.Mult(15.)
+
+			middleP.Add(crossP)
+
+			i = i
+			s := fmt.Sprintf("(%d)", i)
+			dc.DrawStringAnchored(s, middleP.X, (imageSizeY/2)-middleP.Y, 0.5, 0.5)
+		}
 	}
 	dc.Stroke()
 
@@ -103,11 +103,39 @@ func drawImage(d sc.Delaunay, imageName string) {
 		dc.DrawPoint(v.Pos.X*scale, v.Pos.Y*scale, 2.8)
 		//dc.Fill()
 
-		i = i
-		//s := fmt.Sprintf("(%d)", i)
-		//dc.DrawStringAnchored(s, v.Pos.X-10, imageSizeY-v.Pos.Y-10, 0.5, 0.5)
+		if drawDetails {
+			s := fmt.Sprintf("(%d)", i)
+			dc.DrawStringAnchored(s, v.Pos.X-10, (imageSizeY/2)-v.Pos.Y-10, 0.5, 0.5)
+		}
 	}
 	dc.Fill()
+
+	if drawDetails {
+		dc.SetRGB(0.8, 0.0, 0.0)
+		for i, f := range d.Faces {
+
+			if f == sc.EmptyF {
+				continue
+			}
+
+			//dc.DrawCircle(v.Pos.X*scale, v.Pos.Y*scale, 2)
+			//dc.DrawPoint(v.Pos.X*scale, v.Pos.Y*scale, 2.8)
+			//dc.Fill()
+
+			i = i
+			s := fmt.Sprintf("%d", i)
+
+			v0 := d.Vertices[d.Edges[f.EEdge].VOrigin].Pos
+			v1 := d.Vertices[d.Edges[d.Edges[f.EEdge].ENext].VOrigin].Pos
+			v2 := d.Vertices[d.Edges[d.Edges[d.Edges[f.EEdge].ENext].ENext].VOrigin].Pos
+
+			center := sc.Add(v0, v1)
+			center = sc.Add(center, v2)
+			center = sc.Mult(center, 1./3.)
+
+			dc.DrawStringAnchored(s, center.X, (imageSizeY/2)-center.Y, 0.5, 0.5)
+		}
+	}
 
 	//dc.SetRGB(1, 1, 0)
 	//dc.DrawCircle(432, imageSizeY-894, 5)
@@ -239,7 +267,7 @@ func triangulate(myPoints []sc.Vector, fgmPoints []fgm.Point, renderImage, profi
 	fmt.Printf("Triangulation (ms): %.8f, Voronoi (ms): %.8f, Fogleman (ms): %.8f\n", float64(binTime)/1000000.0, float64(binTimeVoronoi)/1000000.0, float64(binTimeFgm)/1000000.0)
 
 	if renderImage {
-		drawImage(triangulationMT, imageName+"_mt_")
+		drawImage(triangulationMT, imageName+"_mt_", false)
 		drawFgmImage(fgmPoints, triangulationFgm, imageName+"_fgm_")
 	}
 
@@ -264,6 +292,7 @@ func testUnknownProblemRandom(count int) ([]sc.Vector, []fgm.Point) {
 	var seed int64 = time.Now().UTC().UnixNano()
 	seed = seed
 	fmt.Fprintf(os.Stderr, "Seed: %v\n", seed)
+	// 1562498183010417589 with 1000000 has Voronoi error.
 	r := rand.New(rand.NewSource(1562498183010417589))
 	var pointList []sc.Vector
 
@@ -276,7 +305,7 @@ func testUnknownProblemRandom(count int) ([]sc.Vector, []fgm.Point) {
 
 func testCircle(count int) ([]sc.Vector, []fgm.Point) {
 	fmt.Printf("===========================\n")
-	fmt.Printf("=== test Circle\n")
+	fmt.Printf("=== test circle\n")
 	fmt.Printf("===========================\n")
 
 	var pointList []sc.Vector
@@ -295,7 +324,7 @@ func testCircle(count int) ([]sc.Vector, []fgm.Point) {
 
 func testDoubleCircle(count int) ([]sc.Vector, []fgm.Point) {
 	fmt.Printf("===========================\n")
-	fmt.Printf("=== test Circle\n")
+	fmt.Printf("=== test double circle\n")
 	fmt.Printf("===========================\n")
 
 	var pointList []sc.Vector
@@ -361,7 +390,7 @@ func testWave(count int) ([]sc.Vector, []fgm.Point) {
 
 func testTiltedGrid(count int, tiltAngle float64) ([]sc.Vector, []fgm.Point) {
 	fmt.Printf("===========================\n")
-	fmt.Printf("=== test tilted grid\n")
+	fmt.Printf("=== test tilted grid %.2f\n", tiltAngle)
 	fmt.Printf("===========================\n")
 
 	angle := sc.DegToRad(tiltAngle)
@@ -390,22 +419,22 @@ func main() {
 	var fgmP []fgm.Point
 	myP, fgmP = testUnknownProblemRandom(1000000)
 	triangulate(myP, fgmP, false, false, false, "random")
-
-	myP, fgmP = testTiltedGrid(500, 0.0)
-	triangulate(myP, fgmP, false, false, false, "tilted_0")
-	myP, fgmP = testTiltedGrid(500, 89.0)
-	triangulate(myP, fgmP, false, false, false, "tilted_89")
-	myP, fgmP = testTiltedGrid(500, 45.0)
-	triangulate(myP, fgmP, false, false, false, "tilted_45")
-	myP, fgmP = testCircle(5000)
-	triangulate(myP, fgmP, false, false, false, "circle")
-	myP, fgmP = testDoubleCircle(10000)
-	triangulate(myP, fgmP, false, false, false, "double_circle")
-	myP, fgmP = testWaveCenterMirrored(10000)
-	triangulate(myP, fgmP, false, false, false, "wave_mirrored")
-	myP, fgmP = testWave(10000)
-	triangulate(myP, fgmP, false, false, false, "wave")
-
+	/*
+		myP, fgmP = testTiltedGrid(500, 0.0)
+		triangulate(myP, fgmP, false, false, false, "tilted_0")
+		myP, fgmP = testTiltedGrid(500, 89.0)
+		triangulate(myP, fgmP, false, false, false, "tilted_89")
+		myP, fgmP = testTiltedGrid(500, 45.0)
+		triangulate(myP, fgmP, false, false, false, "tilted_45")
+		myP, fgmP = testCircle(5000)
+		triangulate(myP, fgmP, false, false, false, "circle")
+		myP, fgmP = testDoubleCircle(10000)
+		triangulate(myP, fgmP, false, false, false, "double_circle")
+		myP, fgmP = testWaveCenterMirrored(10000)
+		triangulate(myP, fgmP, false, false, false, "wave_mirrored")
+		myP, fgmP = testWave(10000)
+		triangulate(myP, fgmP, false, false, false, "wave")
+	*/
 	///=========== Frontier: Slice ==================================///
 
 	// Correct timing and Interpolation Search. Seconds.
