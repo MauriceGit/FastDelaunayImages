@@ -29,8 +29,8 @@ import (
 
 func drawImage(d sc.Delaunay, imageName string, drawDetails bool) {
 	var scale float64 = 1.0
-	var imageSizeX float64 = 2000
 	var imageSizeY float64 = 2000
+	var imageSizeX float64 = 2000
 	dc := gg.NewContext(int(imageSizeX), int(imageSizeY))
 
 	// Background filling in white
@@ -40,22 +40,23 @@ func drawImage(d sc.Delaunay, imageName string, drawDetails bool) {
 
 	dc.SetLineWidth(0.8)
 
+	// Draws 10 horizontal and vertical lines over the whole image and labels them on the side.
 	for i := 1; i < 10; i++ {
 
-		x := float64(i) * 100 * scale
-		y := float64(i) * 100 * scale
+		//		x := float64(i) * 100 * scale
+		//		y := float64(i) * 100 * scale
 
-		dc.SetRGB(1, 0.5, 0.5)
-		dc.DrawLine(0, y, imageSizeX, y)
-		dc.Stroke()
-		dc.DrawLine(x, 0, x, imageSizeY)
-		dc.Stroke()
+		//		dc.SetRGB(1, 0.5, 0.5)
+		//		dc.DrawLine(0, y, imageSizeX, y)
+		//		dc.Stroke()
+		//		dc.DrawLine(x, 0, x, imageSizeY)
+		//		dc.Stroke()
 
-		dc.SetRGB(1, 0.0, 0.0)
-		// X axis
-		//dc.DrawString(strconv.Itoa(int(x)), x+10, (imageSizeY/2)-10)
-		// Y axis
-		//dc.DrawString(strconv.Itoa(int(imageSizeY-y)), 10, y-10)
+		//		dc.SetRGB(1, 0.0, 0.0)
+		//		// X axis
+		//		//dc.DrawString(strconv.Itoa(int(x)), x+10, (imageSizeY/2)-10)
+		//		// Y axis
+		//		//dc.DrawString(strconv.Itoa(int(imageSizeY-y)), 10, y-10)
 
 	}
 
@@ -86,7 +87,7 @@ func drawImage(d sc.Delaunay, imageName string, drawDetails bool) {
 
 			i = i
 			s := fmt.Sprintf("(%d)", i)
-			dc.DrawStringAnchored(s, middleP.X, (imageSizeY/2)-middleP.Y, 0.5, 0.5)
+			dc.DrawStringAnchored(s, middleP.X, middleP.Y, 0.5, 0.5)
 		}
 	}
 	dc.Stroke()
@@ -105,7 +106,7 @@ func drawImage(d sc.Delaunay, imageName string, drawDetails bool) {
 
 		if drawDetails {
 			s := fmt.Sprintf("(%d)", i)
-			dc.DrawStringAnchored(s, v.Pos.X-10, (imageSizeY/2)-v.Pos.Y-10, 0.5, 0.5)
+			dc.DrawStringAnchored(s, v.Pos.X-10, v.Pos.Y-10, 0.5, 0.5)
 		}
 	}
 	dc.Fill()
@@ -132,8 +133,9 @@ func drawImage(d sc.Delaunay, imageName string, drawDetails bool) {
 			center := sc.Add(v0, v1)
 			center = sc.Add(center, v2)
 			center = sc.Mult(center, 1./3.)
+			s = s
 
-			dc.DrawStringAnchored(s, center.X, (imageSizeY/2)-center.Y, 0.5, 0.5)
+			//			dc.DrawStringAnchored(s, center.X, center.Y, 0.5, 0.5)
 		}
 	}
 
@@ -292,8 +294,7 @@ func testUnknownProblemRandom(count int) ([]sc.Vector, []fgm.Point) {
 	var seed int64 = time.Now().UTC().UnixNano()
 	seed = seed
 	fmt.Fprintf(os.Stderr, "Seed: %v\n", seed)
-	// 1562498183010417589 with 1000000 has Voronoi error.
-	r := rand.New(rand.NewSource(1562498183010417589))
+	r := rand.New(rand.NewSource(seed))
 	var pointList []sc.Vector
 
 	for i := 0; i < count; i++ {
@@ -419,9 +420,11 @@ func main() {
 	var fgmP []fgm.Point
 	myP, fgmP = testUnknownProblemRandom(1000000)
 	triangulate(myP, fgmP, false, false, false, "random")
+
 	/*
 		myP, fgmP = testTiltedGrid(500, 0.0)
 		triangulate(myP, fgmP, false, false, false, "tilted_0")
+
 		myP, fgmP = testTiltedGrid(500, 89.0)
 		triangulate(myP, fgmP, false, false, false, "tilted_89")
 		myP, fgmP = testTiltedGrid(500, 45.0)
@@ -435,6 +438,7 @@ func main() {
 		myP, fgmP = testWave(10000)
 		triangulate(myP, fgmP, false, false, false, "wave")
 	*/
+
 	///=========== Frontier: Slice ==================================///
 
 	// Correct timing and Interpolation Search. Seconds.
