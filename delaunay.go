@@ -27,6 +27,122 @@ import (
 	//"image/draw"
 )
 
+func drawImageVoronoi(d sc.Voronoi, imageName string, drawDetails bool) {
+	var scale float64 = 1.0
+	var imageSizeY float64 = 2000 * 3
+	var imageSizeX float64 = 2000 * 3
+	dc := gg.NewContext(int(imageSizeX), int(imageSizeY))
+
+	// Background filling in white
+	dc.SetRGB(1, 1, 1)
+	dc.Clear()
+	dc.Scale(2.0*3, 2.0*3)
+
+	dc.SetLineWidth(0.6)
+	//for i, e := range d.Edges {
+	for i := 0; i < len(d.Edges); i += 2 {
+		e := d.Edges[i]
+
+		if e == sc.EmptyE {
+			continue
+		}
+
+		dc.SetRGB(0, 0, 0)
+
+		var v1 sc.Vector
+		var v2 sc.Vector
+		if e.VOrigin != sc.EmptyVertex {
+			v1 = d.Vertices[e.VOrigin].Pos
+		} else {
+			dc.SetRGB(1, 0, 0)
+			v1 = sc.Add(d.Vertices[d.Edges[e.ETwin].VOrigin].Pos, d.Edges[i].TmpEdge.Dir)
+			v1 = sc.Add(d.Edges[i].TmpEdge.Pos, d.Edges[i].TmpEdge.Dir)
+		}
+		if d.Edges[e.ETwin].VOrigin != sc.EmptyVertex {
+			v2 = d.Vertices[d.Edges[e.ETwin].VOrigin].Pos
+		} else {
+			dc.SetRGB(0, 1, 0)
+			v2 = sc.Add(d.Edges[i].TmpEdge.Pos, d.Edges[i].TmpEdge.Dir)
+		}
+
+		dc.DrawLine(v1.X*scale, v1.Y*scale, v2.X*scale, v2.Y*scale)
+		dc.Stroke()
+		//dc.SetRGB(0, 0, 0)
+
+		if drawDetails {
+			dc.SetRGB(0, 0.5, 0)
+			middleP := sc.Vector{(v1.X + v2.X) / 2., (v1.Y + v2.Y) / 2.}
+
+			crossP := sc.Perpendicular(sc.Sub(v1, v2))
+
+			crossP.Div(sc.Length(crossP))
+			crossP.Mult(15.)
+
+			middleP.Add(crossP)
+
+			i = i
+			s := fmt.Sprintf("(%d)", i)
+			dc.DrawStringAnchored(s, middleP.X, middleP.Y, 0.5, 0.5)
+		}
+	}
+	dc.Stroke()
+
+	//dc.SetLineWidth(1.0)
+	dc.SetRGB(0.0, 0.1, 0.2)
+	for i, v := range d.Vertices {
+
+		if v == sc.EmptyV {
+			continue
+		}
+
+		//dc.DrawCircle(v.Pos.X*scale, v.Pos.Y*scale, 2)
+		//dc.DrawPoint(v.Pos.X*scale, v.Pos.Y*scale, 2.8)
+		//dc.Fill()
+
+		if drawDetails {
+			s := fmt.Sprintf("(%d)", i)
+			dc.DrawStringAnchored(s, v.Pos.X-10, v.Pos.Y-10, 0.5, 0.5)
+		}
+	}
+	dc.Fill()
+
+	if drawDetails {
+		dc.SetRGB(0.8, 0.0, 0.0)
+		for i, f := range d.Faces {
+
+			if f == sc.EmptyF {
+				continue
+			}
+
+			//dc.DrawCircle(v.Pos.X*scale, v.Pos.Y*scale, 2)
+			//dc.DrawPoint(v.Pos.X*scale, v.Pos.Y*scale, 2.8)
+			//dc.Fill()
+
+			i = i
+			s := fmt.Sprintf("%d", i)
+
+			v0 := d.Vertices[d.Edges[f.EEdge].VOrigin].Pos
+			v1 := d.Vertices[d.Edges[d.Edges[f.EEdge].ENext].VOrigin].Pos
+			v2 := d.Vertices[d.Edges[d.Edges[d.Edges[f.EEdge].ENext].ENext].VOrigin].Pos
+
+			center := sc.Add(v0, v1)
+			center = sc.Add(center, v2)
+			center = sc.Mult(center, 1./3.)
+			s = s
+
+			//			dc.DrawStringAnchored(s, center.X, center.Y, 0.5, 0.5)
+		}
+	}
+
+	//dc.SetRGB(1, 1, 0)
+	//dc.DrawCircle(432, imageSizeY-894, 5)
+	//dc.DrawCircle(599, imageSizeY-532, 5)
+	//dc.DrawCircle(501, imageSizeY-578, 5)
+	//dc.Fill()
+
+	dc.SavePNG(imageName + ".png")
+}
+
 func drawImage(d sc.Delaunay, imageName string, drawDetails bool) {
 	var scale float64 = 1.0
 	var imageSizeY float64 = 2000
@@ -270,7 +386,8 @@ func triangulate(myPoints []sc.Vector, fgmPoints []fgm.Point, renderImage, profi
 
 	if renderImage {
 		drawImage(triangulationMT, imageName+"_mt_", false)
-		drawFgmImage(fgmPoints, triangulationFgm, imageName+"_fgm_")
+		drawImageVoronoi(voronoiMT, imageName+"_mt_voronoi_", false)
+		//drawFgmImage(fgmPoints, triangulationFgm, imageName+"_fgm_")
 	}
 
 }
@@ -283,7 +400,7 @@ func toFgmList(points []sc.Vector) []fgm.Point {
 	return newPoints
 }
 
-func testUnknownProblemRandom(count int) ([]sc.Vector, []fgm.Point) {
+func testRandom(count int) ([]sc.Vector, []fgm.Point) {
 	fmt.Printf("===========================\n")
 	fmt.Printf("=== test random\n")
 	fmt.Printf("===========================\n")
@@ -414,12 +531,33 @@ func testTiltedGrid(count int, tiltAngle float64) ([]sc.Vector, []fgm.Point) {
 	return pointList, toFgmList(pointList)
 }
 
+func testPoisson(count int) ([]sc.Vector, []fgm.Point) {
+	fmt.Printf("===========================\n")
+	fmt.Printf("=== test random\n")
+	fmt.Printf("===========================\n")
+
+	scale := 1000.0
+	margin := 10.0
+
+	var seed int64 = time.Now().UTC().UnixNano()
+	seed = seed
+	fmt.Fprintf(os.Stderr, "Seed: %v\n", seed)
+	pointList := CreateFastPoissonDiscPoints(int(float64(count)*1.8), scale, scale, margin, 30, seed)
+
+	fmt.Printf("poisson list count: %v\n", len(pointList))
+
+	return pointList, toFgmList(pointList)
+}
+
 func main() {
 
 	var myP []sc.Vector
 	var fgmP []fgm.Point
-	myP, fgmP = testUnknownProblemRandom(1000000)
+	myP, fgmP = testRandom(1000)
 	triangulate(myP, fgmP, false, false, false, "random")
+
+	myP, fgmP = testPoisson(100)
+	triangulate(myP, fgmP, true, false, false, "poisson")
 
 	/*
 		myP, fgmP = testTiltedGrid(500, 0.0)
