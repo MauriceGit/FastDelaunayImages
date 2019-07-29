@@ -29,14 +29,14 @@ import (
 
 func drawImageVoronoi(d sc.Voronoi, imageName string, drawDetails bool) {
 	var scale float64 = 1.0
-	var imageSizeY float64 = 2000 * 3
-	var imageSizeX float64 = 2000 * 3
+	var imageSizeY float64 = 2000
+	var imageSizeX float64 = 2000
 	dc := gg.NewContext(int(imageSizeX), int(imageSizeY))
 
 	// Background filling in white
 	dc.SetRGB(1, 1, 1)
 	dc.Clear()
-	dc.Scale(2.0*3, 2.0*3)
+	dc.Scale(2.0, 2.0)
 
 	dc.SetLineWidth(0.6)
 	//for i, e := range d.Edges {
@@ -554,28 +554,26 @@ func main() {
 	var myP []sc.Vector
 	var fgmP []fgm.Point
 	myP, fgmP = testRandom(1000)
-	triangulate(myP, fgmP, false, false, false, "random")
+	triangulate(myP, fgmP, true, false, false, "random")
 
 	myP, fgmP = testPoisson(100)
 	triangulate(myP, fgmP, true, false, false, "poisson")
 
-	/*
-		myP, fgmP = testTiltedGrid(500, 0.0)
-		triangulate(myP, fgmP, false, false, false, "tilted_0")
+	myP, fgmP = testTiltedGrid(100, 0.0)
+	triangulate(myP, fgmP, true, false, false, "tilted_0")
 
-		myP, fgmP = testTiltedGrid(500, 89.0)
-		triangulate(myP, fgmP, false, false, false, "tilted_89")
-		myP, fgmP = testTiltedGrid(500, 45.0)
-		triangulate(myP, fgmP, false, false, false, "tilted_45")
-		myP, fgmP = testCircle(5000)
-		triangulate(myP, fgmP, false, false, false, "circle")
-		myP, fgmP = testDoubleCircle(10000)
-		triangulate(myP, fgmP, false, false, false, "double_circle")
-		myP, fgmP = testWaveCenterMirrored(10000)
-		triangulate(myP, fgmP, false, false, false, "wave_mirrored")
-		myP, fgmP = testWave(10000)
-		triangulate(myP, fgmP, false, false, false, "wave")
-	*/
+	myP, fgmP = testTiltedGrid(100, 89.0)
+	triangulate(myP, fgmP, true, false, false, "tilted_89")
+	myP, fgmP = testTiltedGrid(100, 45.0)
+	triangulate(myP, fgmP, true, false, false, "tilted_45")
+	myP, fgmP = testCircle(100)
+	triangulate(myP, fgmP, true, false, false, "circle")
+	myP, fgmP = testDoubleCircle(100)
+	triangulate(myP, fgmP, true, false, false, "double_circle")
+	myP, fgmP = testWaveCenterMirrored(100)
+	triangulate(myP, fgmP, true, false, false, "wave_mirrored")
+	myP, fgmP = testWave(100)
+	triangulate(myP, fgmP, true, false, false, "wave")
 
 	///=========== Frontier: Slice ==================================///
 
