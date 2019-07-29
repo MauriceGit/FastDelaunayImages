@@ -553,27 +553,29 @@ func main() {
 
 	var myP []sc.Vector
 	var fgmP []fgm.Point
-	myP, fgmP = testRandom(1000)
-	triangulate(myP, fgmP, true, false, false, "random")
+	myP, fgmP = testRandom(1000000)
+	triangulate(myP, fgmP, false, false, false, "random")
 
-	myP, fgmP = testPoisson(100)
-	triangulate(myP, fgmP, true, false, false, "poisson")
+	/*
+		myP, fgmP = testPoisson(100)
+		triangulate(myP, fgmP, true, false, false, "poisson")
 
-	myP, fgmP = testTiltedGrid(100, 0.0)
-	triangulate(myP, fgmP, true, false, false, "tilted_0")
+		myP, fgmP = testTiltedGrid(100, 0.0)
+		triangulate(myP, fgmP, true, false, false, "tilted_0")
 
-	myP, fgmP = testTiltedGrid(100, 89.0)
-	triangulate(myP, fgmP, true, false, false, "tilted_89")
-	myP, fgmP = testTiltedGrid(100, 45.0)
-	triangulate(myP, fgmP, true, false, false, "tilted_45")
-	myP, fgmP = testCircle(100)
-	triangulate(myP, fgmP, true, false, false, "circle")
-	myP, fgmP = testDoubleCircle(100)
-	triangulate(myP, fgmP, true, false, false, "double_circle")
-	myP, fgmP = testWaveCenterMirrored(100)
-	triangulate(myP, fgmP, true, false, false, "wave_mirrored")
-	myP, fgmP = testWave(100)
-	triangulate(myP, fgmP, true, false, false, "wave")
+		myP, fgmP = testTiltedGrid(100, 89.0)
+		triangulate(myP, fgmP, true, false, false, "tilted_89")
+		myP, fgmP = testTiltedGrid(100, 45.0)
+		triangulate(myP, fgmP, true, false, false, "tilted_45")
+		myP, fgmP = testCircle(100)
+		triangulate(myP, fgmP, true, false, false, "circle")
+		myP, fgmP = testDoubleCircle(100)
+		triangulate(myP, fgmP, true, false, false, "double_circle")
+		myP, fgmP = testWaveCenterMirrored(100)
+		triangulate(myP, fgmP, true, false, false, "wave_mirrored")
+		myP, fgmP = testWave(100)
+		triangulate(myP, fgmP, true, false, false, "wave")
+	*/
 
 	///=========== Frontier: Slice ==================================///
 
