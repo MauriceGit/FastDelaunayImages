@@ -5,8 +5,8 @@ import (
     "math"
     "math/rand"
 
-    sc "mtSweepCircle"
-    //sc "github.com/MauriceGit/sweepcircle"
+    //sc "mtSweepCircle"
+    sc "github.com/MauriceGit/sweepcircle"
 
     //v "mtVector"
     "os"
